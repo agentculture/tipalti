@@ -1,29 +1,67 @@
-"""``tipalti whoami`` — auth probe stub (Tipalti-specific).
+"""``tipalti whoami`` — auth probe.
 
-Returns ``unauthenticated`` until real Tipalti API auth lands. Supports
-``--json``. Exit code is always ``0`` (probe, not gate).
+Probe, not gate: missing creds and 401 both report ``unauthenticated`` and
+exit 0. Other API/transport errors propagate (`EXIT_ENV_ERROR` / `EXIT_USER_ERROR`).
 """
 
 from __future__ import annotations
 
 import argparse
 
-from tipalti.cli._output import emit_result
+from tipalti.cli._errors import EXIT_ENV_ERROR, AfiError
+from tipalti.cli._output import emit_result, render_kv_md
+
+
+def _emit_unauthenticated(json_mode: bool, env: str | None) -> int:
+    payload = {"status": "unauthenticated", "principal": None, "env": env}
+    if json_mode:
+        emit_result(payload, json_mode=True)
+    else:
+        emit_result(
+            render_kv_md("tipalti whoami", {"status": "unauthenticated", "env": env}),
+            json_mode=False,
+        )
+    return 0
 
 
 def cmd_whoami(args: argparse.Namespace) -> int:
-    payload: dict[str, object] = {"status": "unauthenticated", "principal": None}
-    if getattr(args, "json", False):
-        emit_result(payload, json_mode=True)
-    else:
-        emit_result("unauthenticated", json_mode=False)
+    from tipalti.api import TipaltiClient, load_env
+
+    json_mode = bool(getattr(args, "json", False))
+    try:
+        env = load_env()
+    except AfiError as err:
+        if err.code == EXIT_ENV_ERROR:
+            return _emit_unauthenticated(json_mode, env=None)
+        raise
+
+    with TipaltiClient(env) as client:
+        result = client.whoami()
+
+    if json_mode:
+        emit_result(result, json_mode=True)
+        return 0
+
+    if result["status"] == "unauthenticated":
+        return _emit_unauthenticated(json_mode=False, env=result.get("env"))
+
+    principal = result.get("principal")
+    fields: dict[str, object] = {"status": "authenticated", "env": result.get("env")}
+    if isinstance(principal, dict):
+        for key in ("id", "name", "email", "subject", "sub", "client_id"):
+            value = principal.get(key)
+            if value is not None and key not in fields:
+                fields[key] = value
+    elif principal is not None:
+        fields["principal"] = principal
+    emit_result(render_kv_md("tipalti whoami", fields), json_mode=False)
     return 0
 
 
 def register(sub: argparse._SubParsersAction) -> None:
     p = sub.add_parser(
         "whoami",
-        help="Print the active Tipalti principal (stub in v0.0.1).",
+        help="Print the active Tipalti principal (auth probe; exit 0 even when unauth).",
     )
     p.add_argument("--json", action="store_true", help="Emit structured JSON.")
     p.set_defaults(func=cmd_whoami)

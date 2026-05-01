@@ -4,7 +4,9 @@ This file provides guidance to [Claude Code](https://claude.com/claude-code) whe
 
 ## Status
 
-Scaffolded from the AgentCulture sibling pattern at `v0.0.1`. The bootstrap PR (`bootstrap/sibling-pattern`, see `agentculture/tipalti#1`) lands the package, CI, and vendored skills described below. Manual one-time setup after the bootstrap PR merges:
+`v0.1.0` — first real release. Adds read-only verbs over Tipalti REST v2 (Payees, Invoices, Bills), OAuth2 client-credentials auth via env vars, and a real `whoami` probe. Mutations, iFrame URL generation, webhooks, SOAP, tax forms, and KYC are deferred to subsequent releases.
+
+Scaffolded from the AgentCulture sibling pattern. Manual one-time setup (already completed for the v0.0.1 bootstrap PR):
 
 1. Configure **PyPI Trusted Publishing** for `tipalti` ← `agentculture/tipalti`, environment `pypi`, workflow `publish.yml`. Same for **TestPyPI**.
 2. Create GitHub Environments `pypi` and `testpypi` on the repo.
@@ -12,9 +14,25 @@ Scaffolded from the AgentCulture sibling pattern at `v0.0.1`. The bootstrap PR (
 
 ## What this project is
 
-`tipalti` is the CLI for Tipalti Solutions, scaffolded from the AgentCulture sibling pattern (the same shape used by [`steward`](https://github.com/agentculture/steward) and the agent-first CLI tree from [`afi-cli`](https://github.com/agentculture/afi-cli)). v0.0.1 ships only the agent-first affordances (`learn`, `explain`) and an auth-probe stub (`whoami`); domain verbs that exercise the Tipalti API land in subsequent releases.
+`tipalti` is the CLI for Tipalti Solutions, scaffolded from the AgentCulture sibling pattern (the same shape used by [`steward`](https://github.com/agentculture/steward) and the agent-first CLI tree from [`afi-cli`](https://github.com/agentculture/afi-cli)). v0.1.0 ships a read-only explorer over Tipalti REST v2 (Payees, Invoices, Bills) plus the agent-first affordances (`learn`, `explain`, `whoami`); mutations, iFrame URL generation, webhooks, SOAP, tax forms, and KYC land in subsequent releases.
+
+The first resident user of this CLI is an LLM agent. Every verb supports `--json`, default human-mode output is markdown, errors carry machine-readable remediation hints, and one verb invocation = one upstream HTTP request (auth excluded). State lives in env vars; the only persistent file is the bearer-token cache.
 
 The repo is intentionally portable: it assumes nothing about local sibling checkouts. `pyproject.toml`, CI workflows, and skills are pulled from steward over the network at bootstrap time, then committed verbatim (or with the documented token substitutions). `steward doctor . --scope self` enforces this on every PR.
+
+## Auth and environment
+
+Tipalti REST v2 uses OAuth 2.0 client credentials. The CLI reads:
+
+- `TIPALTI_CLIENT_ID` / `TIPALTI_CLIENT_SECRET` — required.
+- `TIPALTI_ENV` — `sandbox` | `production`; default `sandbox`.
+- `TIPALTI_API_BASE` / `TIPALTI_TOKEN_URL` — optional URL overrides.
+
+Bearer tokens are cached at `$XDG_CACHE_HOME/tipalti/token-<env>.json` (file mode `0600`). The cache is a pure performance optimization: delete the file to force re-auth. Rotating the client ID invalidates the cache automatically (the cache record carries a hash of the client ID).
+
+`tipalti whoami` is a probe, not a gate: missing creds and `401` both report `unauthenticated` and exit `0`.
+
+There is one opt-in integration test (`@pytest.mark.integration`) that hits the real sandbox if `TIPALTI_CLIENT_ID/SECRET` and `TIPALTI_ENV=sandbox` are set; it is skipped by default and not run in CI.
 
 ## Project shape
 
@@ -24,18 +42,27 @@ Distributed as **`tipalti`** on PyPI (Trusted Publishing). The Python package is
 tipalti/                    # Python package (pip install tipalti)
 ├── __init__.py             # __version__ via importlib.metadata("tipalti")
 ├── __main__.py             # python -m tipalti
+├── api/                    # CLI-agnostic httpx client over Tipalti REST v2
+│   ├── _env.py             # reads TIPALTI_CLIENT_ID/SECRET/ENV; URL defaults + overrides
+│   ├── auth.py             # OAuth2 client-creds + on-disk token cache
+│   ├── client.py           # TipaltiClient + payees/invoices/bills resource groups
+│   └── errors.py           # HTTP-status → AfiError mapping
 └── cli/
-    ├── __init__.py         # argparse main(); _ArgumentParser, _dispatch
+    ├── __init__.py         # argparse main(); registers all noun groups
     ├── _errors.py          # AfiError + EXIT_USER_ERROR / EXIT_ENV_ERROR
-    ├── _output.py          # emit_result / emit_error / emit_diagnostic
+    ├── _output.py          # emit_result / emit_error + markdown render helpers
+    ├── _listing.py         # shared list/get verb handler
     └── _commands/          # subcommand modules; each has register(sub) + handler
-        ├── learn.py        # `tipalti learn` — agent-affordance prompt
-        ├── explain.py      # `tipalti explain <path>` — markdown catalog lookup
-        └── whoami.py       # `tipalti whoami` — auth probe stub (v0.0.1)
+        ├── learn.py        # `tipalti learn`
+        ├── explain.py      # `tipalti explain <path>`
+        ├── whoami.py       # `tipalti whoami` — real auth probe
+        ├── payee.py        # `tipalti payee {list,get}`
+        ├── invoice.py      # `tipalti invoice {list,get}`
+        └── bill.py         # `tipalti bill {list,get}`
 tipalti/explain/            # markdown catalog driving `explain`
 ├── __init__.py             # resolve() + known_paths()
-└── catalog.py              # ENTRIES dict
-tests/                      # pytest suite (split per-verb)
+└── catalog.py              # ENTRIES dict (root, auth, per-noun, per-verb)
+tests/                      # pytest suite (split per-verb + api unit tests)
 .claude/skills/             # vendored from steward (see "Skills convention")
 .github/workflows/          # tests.yml + publish.yml (OIDC Trusted Publishing)
 pyproject.toml              # version source-of-truth
@@ -51,7 +78,7 @@ CHANGELOG.md                # Keep-a-Changelog
 - **Lint:** `uv run flake8 tipalti tests && uv run black --check . && uv run isort --check .`
 - **Markdown lint:** `markdownlint-cli2 "**/*.md"` (uses repo-local `.markdownlint-cli2.yaml`).
 - **Self-check:** `steward doctor . --scope self`.
-- **Smoke:** `uv run tipalti --version` (expects `0.0.1`) and `uv run python -m tipalti`.
+- **Smoke:** `uv run tipalti --version` (expects `0.1.0`) and `uv run python -m tipalti`.
 - **Build:** `uv build`.
 - **Version bump:** `python3 .claude/skills/version-bump/scripts/bump.py {patch|minor|major}` — updates `pyproject.toml` and prepends a CHANGELOG entry. **Required on every PR** (the `version-check` CI job comments on the PR and fails the run if the version matches main; AgentCulture rule, no exceptions for docs/config-only changes).
 - **Publish:** push to `main` triggers `.github/workflows/publish.yml` → builds with `uv build` → publishes `tipalti` to PyPI via Trusted Publishing (no API tokens). PRs publish a `.dev<run_number>` to TestPyPI for smoke-testing. Fork PRs are skipped (no OIDC context).

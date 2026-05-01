@@ -16,8 +16,11 @@ import argparse
 import sys
 
 from tipalti import __version__
+from tipalti.cli._commands import bill as _bill_cmd
 from tipalti.cli._commands import explain as _explain_cmd
+from tipalti.cli._commands import invoice as _invoice_cmd
 from tipalti.cli._commands import learn as _learn_cmd
+from tipalti.cli._commands import payee as _payee_cmd
 from tipalti.cli._commands import whoami as _whoami_cmd
 from tipalti.cli._errors import EXIT_USER_ERROR, AfiError
 from tipalti.cli._output import emit_error
@@ -47,9 +50,9 @@ def _build_parser() -> argparse.ArgumentParser:
     _learn_cmd.register(sub)
     _explain_cmd.register(sub)
     _whoami_cmd.register(sub)
-    # Register noun groups here:
-    #   from tipalti.cli._commands import my_noun as _my_noun_group
-    #   _my_noun_group.register(sub)
+    _payee_cmd.register(sub)
+    _invoice_cmd.register(sub)
+    _bill_cmd.register(sub)
 
     return parser
 
