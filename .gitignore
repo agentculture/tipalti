@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.afi/
+
+# tipalti skills per-machine config (uncommitted)
+.claude/skills.local.yaml
