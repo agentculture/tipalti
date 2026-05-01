@@ -124,7 +124,7 @@ the Procurement REST surface), set `TIPALTI_API_BASE` and
 ## Token cache
 
 Bearer tokens are cached at `$XDG_CACHE_HOME/tipalti/token-<env>.json`
-(falls back to `~/.cache/tipalti/...`), file mode `0600`. The cache is a
+(falls back to `$HOME/.cache/tipalti/...`), file mode `0600`. The cache is a
 pure performance optimization: delete the file to force re-authentication.
 The cache is automatically invalidated when `TIPALTI_CLIENT_ID` rotates.
 

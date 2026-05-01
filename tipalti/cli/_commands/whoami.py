@@ -1,14 +1,15 @@
 """``tipalti whoami`` — auth probe.
 
 Probe, not gate: missing creds and 401 both report ``unauthenticated`` and
-exit 0. Other API/transport errors propagate (`EXIT_ENV_ERROR` / `EXIT_USER_ERROR`).
+exit 0. Other API/transport errors — including unknown ``TIPALTI_ENV`` —
+propagate (`EXIT_ENV_ERROR` / `EXIT_USER_ERROR`).
 """
 
 from __future__ import annotations
 
 import argparse
 
-from tipalti.cli._errors import EXIT_ENV_ERROR, AfiError
+from tipalti.cli._errors import AfiError
 from tipalti.cli._output import emit_result, render_kv_md
 
 
@@ -31,7 +32,7 @@ def cmd_whoami(args: argparse.Namespace) -> int:
     try:
         env = load_env()
     except AfiError as err:
-        if err.code == EXIT_ENV_ERROR:
+        if err.kind == "missing_creds":
             return _emit_unauthenticated(json_mode, env=None)
         raise
 

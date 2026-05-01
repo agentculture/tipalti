@@ -166,3 +166,79 @@ def test_get_token_misses_cache_then_fetches_and_writes(
     assert token.access_token == "fresh"
     again = read_cached(env)
     assert again is not None and again.access_token == "fresh"
+
+
+# ---- symlink-safe write (Qodo finding) -------------------------------------
+
+
+def test_cache_write_is_symlink_safe(isolated_cache, tmp_path) -> None:
+    """Pre-creating a symlink at the cache path must NOT redirect the write.
+
+    Before the fix, ``os.open(path, O_TRUNC)`` would follow the symlink and
+    truncate the linked file. After the fix, the write goes through a
+    same-directory tempfile and ``os.replace``, which atomically swaps the
+    symlink for the new regular file.
+    """
+    env = _env()
+    target = tmp_path / "DO_NOT_TRUNCATE.txt"
+    target.write_text("important contents")
+    cache_root = cache_path(env.env)
+    cache_root.parent.mkdir(parents=True, exist_ok=True)
+    os.symlink(target, cache_root)
+
+    write_cache(
+        env,
+        CachedToken("tok", int(time.time()) + 3600, env.env, _client_id_hash(env.client_id)),
+    )
+
+    # The linked-to file must not have been touched.
+    assert target.read_text() == "important contents"
+    # The cache path must now be a regular file (the symlink was atomically
+    # replaced) with the token JSON.
+    assert cache_root.is_file()
+    assert not cache_root.is_symlink()
+    payload = json.loads(cache_root.read_text())
+    assert payload["access_token"] == "tok"
+
+
+# ---- fetch_token robustness (Copilot finding) -------------------------------
+
+
+def test_fetch_token_non_json_body_raises_afi_error(
+    isolated_cache, respx_mock: respx.MockRouter
+) -> None:
+    env = _env()
+    respx_mock.post(env.token_url).mock(return_value=httpx.Response(200, text="<html>nope</html>"))
+    from tipalti.cli._errors import EXIT_USER_ERROR, AfiError
+
+    with pytest.raises(AfiError) as exc:
+        fetch_token(env)
+    assert exc.value.code == EXIT_USER_ERROR
+    assert "invalid token response" in exc.value.message
+
+
+def test_fetch_token_missing_access_token_raises_afi_error(
+    isolated_cache, respx_mock: respx.MockRouter
+) -> None:
+    env = _env()
+    respx_mock.post(env.token_url).mock(return_value=httpx.Response(200, json={"expires_in": 3600}))
+    from tipalti.cli._errors import EXIT_USER_ERROR, AfiError
+
+    with pytest.raises(AfiError) as exc:
+        fetch_token(env)
+    assert exc.value.code == EXIT_USER_ERROR
+    assert "invalid token response" in exc.value.message
+
+
+def test_fetch_token_zero_expires_raises_afi_error(
+    isolated_cache, respx_mock: respx.MockRouter
+) -> None:
+    env = _env()
+    respx_mock.post(env.token_url).mock(
+        return_value=httpx.Response(200, json={"access_token": "tok", "expires_in": 0})
+    )
+    from tipalti.cli._errors import EXIT_USER_ERROR, AfiError
+
+    with pytest.raises(AfiError) as exc:
+        fetch_token(env)
+    assert exc.value.code == EXIT_USER_ERROR

@@ -48,13 +48,35 @@ def test_normalize_envelope_items_field() -> None:
     assert env == {"items": [{"id": 1}], "next_cursor": "tok"}
 
 
-def test_normalize_envelope_value_field_odata() -> None:
+def test_normalize_envelope_value_field_odata_extracts_skiptoken() -> None:
     env = _normalize_envelope(
-        {"value": [{"id": "a"}, {"id": "b"}], "@odata.nextLink": "skip=2"},
+        {
+            "value": [{"id": "a"}, {"id": "b"}],
+            "@odata.nextLink": "https://api.sandbox.tipalti.com/v2/payees?$skiptoken=tok-2&$top=2",
+        },
         limit=2,
     )
     assert env["items"] == [{"id": "a"}, {"id": "b"}]
-    assert env["next_cursor"] == "skip=2"
+    assert env["next_cursor"] == "tok-2"
+
+
+def test_normalize_envelope_odata_link_falls_back_to_skip() -> None:
+    env = _normalize_envelope(
+        {
+            "value": [{"id": "a"}],
+            "@odata.nextLink": "https://api.sandbox.tipalti.com/v2/payees?$skip=10",
+        },
+        limit=1,
+    )
+    assert env["next_cursor"] == "10"
+
+
+def test_normalize_envelope_odata_link_without_cursor_param_yields_none() -> None:
+    env = _normalize_envelope(
+        {"value": [{"id": "a"}], "@odata.nextLink": "https://api.example.com/no-params"},
+        limit=1,
+    )
+    assert env["next_cursor"] is None
 
 
 def test_normalize_envelope_short_page_drops_cursor() -> None:
@@ -151,6 +173,31 @@ def test_list_5xx_retries_then_succeeds(primed, respx_mock: respx.MockRouter) ->
         envelope = client.payees.list(limit=1)
     assert envelope["items"] == [{"id": "p1"}]
     assert route.call_count == 2
+
+
+def test_429_retry_after_does_not_oversleep(
+    primed, respx_mock: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``Retry-After: 7`` should sleep exactly 7s — not 8s (bug fixed)."""
+    sleeps: list[float] = []
+
+    def _record_sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr("tipalti.api.client.time.sleep", _record_sleep)
+
+    respx_mock.get("https://api.sandbox.tipalti.com/v2/payees").mock(
+        side_effect=[
+            httpx.Response(429, headers={"Retry-After": "7"}, json={}),
+            httpx.Response(200, json={"items": []}),
+        ]
+    )
+    with TipaltiClient(primed) as client:
+        client.payees.list(limit=1)
+    # The fix collapses dual-sleep into a single per-iteration delay:
+    # exactly one positive sleep of 7.0 seconds before the retry attempt.
+    positive_sleeps = [s for s in sleeps if s > 0]
+    assert positive_sleeps == [7.0]
 
 
 # ---- whoami ----------------------------------------------------------------

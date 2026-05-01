@@ -99,10 +99,10 @@ def _as_json_payload() -> dict[str, object]:
         ],
         "env_vars": {
             "TIPALTI_CLIENT_ID": "OAuth2 client ID (required)",
-            "TIPALTI_CLIENT_SECRET": "OAuth2 client secret (required)",
+            "TIPALTI_CLIENT_SECRET": "OAuth2 client secret (required)",  # nosec B105
             "TIPALTI_ENV": "sandbox | production (default: sandbox)",
             "TIPALTI_API_BASE": "optional base-URL override",
-            "TIPALTI_TOKEN_URL": "optional token-URL override",
+            "TIPALTI_TOKEN_URL": "optional token-URL override",  # nosec B105
         },
         "list_envelope": {"items": "list of records", "next_cursor": "str | null"},
         "exit_codes": {

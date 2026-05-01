@@ -16,7 +16,8 @@ in via ``--cursor``.
 from __future__ import annotations
 
 import time
-from typing import Any, Iterable
+from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 
@@ -40,13 +41,32 @@ def _coerce_retry_after(value: str | None) -> float:
         return 0.0
 
 
+def _extract_skiptoken_from_url(link: str) -> str | None:
+    """Extract ``$skiptoken`` (or ``$skip``) from an OData ``@odata.nextLink`` URL.
+
+    The rest of the client treats ``next_cursor`` as the literal cursor
+    token to feed back as ``$skiptoken`` on the next request, so storing a
+    full URL here would round-trip as an invalid query parameter.
+    """
+    try:
+        qs = parse_qs(urlparse(link).query)
+    except ValueError:
+        return None
+    for key in ("$skiptoken", "$skip"):
+        value = qs.get(key)
+        if value:
+            return value[0]
+    return None
+
+
 def _normalize_envelope(body: Any, limit: int) -> dict[str, Any]:
     """Map a Tipalti list response into ``{"items", "next_cursor"}``.
 
     Tipalti's REST v2 list responses commonly use either an ``items`` array
     with a ``nextPageToken`` / ``next_cursor`` field, or an OData-style
     ``value`` array with ``@odata.nextLink``. We accept both shapes and
-    always emit our envelope.
+    always emit our envelope, with ``next_cursor`` always being a literal
+    cursor token (never a URL).
     """
     items: list[Any]
     next_cursor: str | None = None
@@ -61,11 +81,15 @@ def _normalize_envelope(body: Any, limit: int) -> dict[str, Any]:
         else:
             items = []
 
-        for key in ("nextPageToken", "next_cursor", "nextCursor", "@odata.nextLink"):
+        for key in ("nextPageToken", "next_cursor", "nextCursor"):
             value = body.get(key)
             if isinstance(value, str) and value:
                 next_cursor = value
                 break
+        if next_cursor is None:
+            link = body.get("@odata.nextLink")
+            if isinstance(link, str) and link:
+                next_cursor = _extract_skiptoken_from_url(link)
     elif isinstance(body, list):
         items = list(body)
     else:
@@ -201,11 +225,18 @@ class TipaltiClient:
         *,
         params: dict[str, Any] | None = None,
     ) -> httpx.Response:
-        attempts: Iterable[float] = (0.0, 1.0)  # initial + one retry
+        """Make a request with a single-attempt retry on 429 / 5xx / transport.
+
+        The retry delay is computed *once* per iteration: ``Retry-After`` for
+        429 (capped at ``MAX_RETRY_AFTER_SECONDS``), ``1.0s`` for 5xx and
+        transport errors. We don't stack a fixed backoff on top of
+        ``Retry-After`` — sleeping ``Retry-After: 7`` should wait exactly 7s.
+        """
+        delay = 0.0
         last_response: httpx.Response | None = None
-        for attempt_index, base_delay in enumerate(attempts):
-            if base_delay:
-                time.sleep(base_delay)
+        for attempt_index in range(2):
+            if delay > 0:
+                time.sleep(delay)
             try:
                 response = self._http.request(
                     method,
@@ -214,16 +245,16 @@ class TipaltiClient:
                     headers=self._auth_headers(),
                 )
             except httpx.HTTPError as exc:
-                # Retry once on transport error too — same single-retry policy.
                 if attempt_index == 0:
+                    delay = 1.0
                     continue
                 raise from_transport_error(exc) from exc
 
             if response.status_code in RETRY_STATUSES and attempt_index == 0:
                 if response.status_code == 429:
-                    retry_after = _coerce_retry_after(response.headers.get("Retry-After"))
-                    if retry_after > 0:
-                        time.sleep(retry_after - base_delay if retry_after > base_delay else 0)
+                    delay = _coerce_retry_after(response.headers.get("Retry-After"))
+                else:
+                    delay = 1.0
                 last_response = response
                 continue
             return response

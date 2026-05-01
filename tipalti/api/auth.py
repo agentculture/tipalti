@@ -1,8 +1,8 @@
 """OAuth2 client-credentials acquisition with on-disk token cache.
 
 Cache file: ``$XDG_CACHE_HOME/tipalti/token-<env>.json`` (fallback
-``~/.cache/tipalti/...``), file mode ``0600``. The cache record includes a
-short hash of the client ID; rotating credentials invalidates the cache.
+``$HOME/.cache/tipalti/...``), file mode ``0600``. The cache record includes
+a short hash of the client ID; rotating credentials invalidates the cache.
 
 Refresh window: tokens are refreshed when their remaining lifetime is less
 than :data:`REFRESH_WINDOW_SECONDS`.
@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,6 +22,7 @@ import httpx
 
 from tipalti.api._env import TipaltiEnv
 from tipalti.api.errors import from_http_response, from_transport_error
+from tipalti.cli._errors import EXIT_USER_ERROR, AfiError
 
 REFRESH_WINDOW_SECONDS = 30
 _TOKEN_REQUEST_TIMEOUT = 15.0
@@ -82,6 +84,12 @@ def read_cached(env: TipaltiEnv) -> CachedToken | None:
 
 
 def write_cache(env: TipaltiEnv, token: CachedToken) -> None:
+    """Atomically write the token cache via a same-directory tempfile.
+
+    A symlink at the final path can't redirect the truncating write because
+    we open and write through ``mkstemp`` (which creates a fresh inode in
+    the same directory), then ``os.replace`` into place.
+    """
     path = cache_path(env.env)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -90,16 +98,19 @@ def write_cache(env: TipaltiEnv, token: CachedToken) -> None:
         "env": token.env,
         "client_id_hash": token.client_id_hash,
     }
-    # Write+chmod under a deterministic mode regardless of umask.
-    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent))
+    tmp_path = Path(tmp_name)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(payload, f)
-    finally:
+        os.chmod(tmp_path, 0o600)
+        os.replace(tmp_path, path)
+    except Exception:
         try:
-            os.chmod(path, 0o600)
+            tmp_path.unlink()
         except OSError:
             pass
+        raise
 
 
 def fetch_token(env: TipaltiEnv, *, transport: httpx.BaseTransport | None = None) -> CachedToken:
@@ -122,11 +133,36 @@ def fetch_token(env: TipaltiEnv, *, transport: httpx.BaseTransport | None = None
     if response.status_code >= 400:
         raise from_http_response(response)
 
-    body = response.json()
-    access_token = str(body.get("access_token") or "")
-    expires_in = int(body.get("expires_in") or 0)
+    try:
+        body = response.json()
+    except (ValueError, json.JSONDecodeError):
+        body = None
+
+    access_token: str = ""
+    expires_in: int = 0
+    if isinstance(body, dict):
+        token_value = body.get("access_token")
+        if isinstance(token_value, str):
+            access_token = token_value
+        raw_expires = body.get("expires_in")
+        if isinstance(raw_expires, (int, float)):
+            expires_in = int(raw_expires)
+        elif isinstance(raw_expires, str):
+            try:
+                expires_in = int(float(raw_expires))
+            except ValueError:
+                expires_in = 0
+
     if not access_token or expires_in <= 0:
-        raise from_http_response(response)
+        snippet = response.text[:200].replace("\n", " ").strip()
+        raise AfiError(
+            code=EXIT_USER_ERROR,
+            message=(
+                f"invalid token response from {env.token_url} "
+                f"(status {response.status_code}): {snippet}"
+            ),
+            remediation="check TIPALTI_CLIENT_ID/SECRET and TIPALTI_TOKEN_URL",
+        )
 
     return CachedToken(
         access_token=access_token,

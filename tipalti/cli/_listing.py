@@ -86,3 +86,49 @@ def run_get(
     title = f"{noun} {resource_id}"
     emit_result(render_record_md(title, record), json_mode=False)
     return 0
+
+
+def register_noun_group(
+    sub: argparse._SubParsersAction,
+    *,
+    noun: str,
+    group_help: str,
+    list_help: str,
+    list_columns: Sequence[str],
+    get_help: str,
+    get_id_help: str,
+    list_fetch: Callable[["TipaltiClient", argparse.Namespace], dict[str, Any]],
+    get_fetch: Callable[["TipaltiClient", str], Any],
+) -> None:
+    """Register a noun group's ``list`` and ``get`` verbs.
+
+    The noun module supplies just the resource-shaped bits (columns, fetch
+    callables, help strings); this helper owns the argparse boilerplate
+    and the dispatch glue. Keeps each noun module short, makes it
+    impossible to drift the verb surface across nouns.
+    """
+    parser = sub.add_parser(noun, help=group_help)
+    verbs = parser.add_subparsers(dest="verb")
+    verbs.required = True
+
+    list_parser = verbs.add_parser("list", help=list_help)
+    add_list_flags(list_parser)
+
+    def _cmd_list(args: argparse.Namespace) -> int:
+        return run_list(
+            args,
+            noun=noun,
+            title=f"{noun} list",
+            columns=list_columns,
+            fetch=lambda client: list_fetch(client, args),
+        )
+
+    list_parser.set_defaults(func=_cmd_list)
+
+    get_parser = verbs.add_parser("get", help=get_help)
+    add_get_flags(get_parser, id_help=get_id_help)
+
+    def _cmd_get(args: argparse.Namespace) -> int:
+        return run_get(args, noun=noun, fetch=get_fetch)
+
+    get_parser.set_defaults(func=_cmd_get)

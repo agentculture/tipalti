@@ -76,3 +76,19 @@ def test_whoami_authenticated_markdown(
     assert "authenticated" in out
     assert "me-1" in out
     assert "Alice" in out
+
+
+def test_whoami_unknown_env_propagates_error(
+    monkeypatch: pytest.MonkeyPatch,
+    isolated_cache,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An unknown TIPALTI_ENV must NOT be swallowed as 'unauthenticated'."""
+    monkeypatch.setenv("TIPALTI_CLIENT_ID", "id")
+    monkeypatch.setenv("TIPALTI_CLIENT_SECRET", "s")
+    monkeypatch.setenv("TIPALTI_ENV", "staging")  # not in VALID_ENVS
+    rc = main(["whoami"])
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "unknown TIPALTI_ENV" in err
+    assert "staging" in err

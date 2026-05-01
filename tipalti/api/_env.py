@@ -69,6 +69,7 @@ def load_env(source: Mapping[str, str] | None = None) -> TipaltiEnv:
             code=EXIT_ENV_ERROR,
             message="missing TIPALTI_CLIENT_ID/SECRET",
             remediation="set env vars; see 'tipalti explain auth'",
+            kind="missing_creds",
         )
 
     api_base = (env_map.get("TIPALTI_API_BASE") or _DEFAULT_API_BASE[env_name]).rstrip("/")
