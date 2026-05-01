@@ -59,43 +59,45 @@ def _extract_skiptoken_from_url(link: str) -> str | None:
     return None
 
 
+_ITEMS_KEYS = ("items", "value", "data")
+_DIRECT_CURSOR_KEYS = ("nextPageToken", "next_cursor", "nextCursor")
+
+
+def _pick_items(body: Any) -> list[Any]:
+    """Pull the records list out of a list-shape response body."""
+    if isinstance(body, list):
+        return list(body)
+    if isinstance(body, dict):
+        for key in _ITEMS_KEYS:
+            value = body.get(key)
+            if isinstance(value, list):
+                return list(value)
+    return []
+
+
+def _pick_cursor(body: Any) -> str | None:
+    """Pull a literal cursor token out of a list-shape response body."""
+    if not isinstance(body, dict):
+        return None
+    for key in _DIRECT_CURSOR_KEYS:
+        value = body.get(key)
+        if isinstance(value, str) and value:
+            return value
+    link = body.get("@odata.nextLink")
+    if isinstance(link, str) and link:
+        return _extract_skiptoken_from_url(link)
+    return None
+
+
 def _normalize_envelope(body: Any, limit: int) -> dict[str, Any]:
     """Map a Tipalti list response into ``{"items", "next_cursor"}``.
 
-    Tipalti's REST v2 list responses commonly use either an ``items`` array
-    with a ``nextPageToken`` / ``next_cursor`` field, or an OData-style
-    ``value`` array with ``@odata.nextLink``. We accept both shapes and
-    always emit our envelope, with ``next_cursor`` always being a literal
-    cursor token (never a URL).
+    Accepts both ``items``/``nextPageToken`` and OData ``value``/
+    ``@odata.nextLink`` shapes. ``next_cursor`` is always a literal cursor
+    token (never a URL); short pages drop the cursor defensively.
     """
-    items: list[Any]
-    next_cursor: str | None = None
-
-    if isinstance(body, dict):
-        if isinstance(body.get("items"), list):
-            items = list(body["items"])
-        elif isinstance(body.get("value"), list):
-            items = list(body["value"])
-        elif isinstance(body.get("data"), list):
-            items = list(body["data"])
-        else:
-            items = []
-
-        for key in ("nextPageToken", "next_cursor", "nextCursor"):
-            value = body.get(key)
-            if isinstance(value, str) and value:
-                next_cursor = value
-                break
-        if next_cursor is None:
-            link = body.get("@odata.nextLink")
-            if isinstance(link, str) and link:
-                next_cursor = _extract_skiptoken_from_url(link)
-    elif isinstance(body, list):
-        items = list(body)
-    else:
-        items = []
-
-    # Defensive: don't claim there's a next page when the page wasn't full.
+    items = _pick_items(body)
+    next_cursor = _pick_cursor(body)
     if next_cursor and len(items) < limit:
         next_cursor = None
     return {"items": items, "next_cursor": next_cursor}

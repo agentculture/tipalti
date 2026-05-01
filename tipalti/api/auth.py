@@ -59,7 +59,7 @@ def read_cached(env: TipaltiEnv) -> CachedToken | None:
     path = cache_path(env.env)
     try:
         raw = path.read_text(encoding="utf-8")
-    except (FileNotFoundError, PermissionError, OSError):
+    except OSError:
         return None
     try:
         data = json.loads(raw)
@@ -135,7 +135,7 @@ def fetch_token(env: TipaltiEnv, *, transport: httpx.BaseTransport | None = None
 
     try:
         body = response.json()
-    except (ValueError, json.JSONDecodeError):
+    except ValueError:
         body = None
 
     access_token: str = ""
