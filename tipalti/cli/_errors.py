@@ -24,18 +24,27 @@ EXIT_ENV_ERROR = 2
 
 @dataclass
 class AfiError(Exception):
-    """Structured error with a remediation hint for agents."""
+    """Structured error with a remediation hint for agents.
+
+    ``kind`` is a free-form discriminator string (e.g. ``"missing_creds"``)
+    that lets handlers distinguish between errors sharing the same exit
+    code without parsing ``message``. Optional; defaults to empty.
+    """
 
     code: int
     message: str
     remediation: str = ""
+    kind: str = ""
 
     def __post_init__(self) -> None:
         super().__init__(self.message)
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "code": self.code,
             "message": self.message,
             "remediation": self.remediation,
         }
+        if self.kind:
+            payload["kind"] = self.kind
+        return payload
