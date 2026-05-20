@@ -152,9 +152,14 @@ class TipaltiClient:
             transport=transport,
             headers={"Accept": "application/json"},
         )
-        self.payees = _ResourceGroup(self, "/v2/payees", "payee")
-        self.invoices = _ResourceGroup(self, "/v2/invoices", "invoice")
-        self.bills = _ResourceGroup(self, "/v2/bills", "bill")
+        self.payees = _ResourceGroup(self, "/api/v1/payees", "payee")
+        self.invoices = _ResourceGroup(self, "/api/v1/invoices", "invoice")
+        self.payments = _ResourceGroup(self, "/api/v1/payments", "payment")
+        self.payer_entities = _ResourceGroup(self, "/api/v1/payer-entities", "payer-entity")
+        self.gl_accounts = _ResourceGroup(self, "/api/v1/gl-accounts", "gl-account")
+        self.custom_fields = _ResourceGroup(self, "/api/v1/custom-fields", "custom-field")
+        self.payment_terms = _ResourceGroup(self, "/api/v1/payment-terms", "payment-term")
+        self.tax_codes = _ResourceGroup(self, "/api/v1/tax-codes", "tax-code")
 
     @classmethod
     def from_env(cls, **kwargs: Any) -> "TipaltiClient":

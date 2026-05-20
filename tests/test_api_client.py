@@ -40,6 +40,28 @@ def primed(isolated_cache):
     return env
 
 
+# ---- resource path prefix --------------------------------------------------
+
+
+def test_all_resource_paths_use_api_v1_prefix(primed) -> None:
+    """Every registered resource group must live under /api/v1/."""
+    with TipaltiClient(primed) as client:
+        groups = [
+            client.payees,
+            client.invoices,
+            client.payments,
+            client.payer_entities,
+            client.gl_accounts,
+            client.custom_fields,
+            client.payment_terms,
+            client.tax_codes,
+        ]
+    for group in groups:
+        assert group._path.startswith("/api/v1/"), group._path
+    # The bill noun is removed entirely.
+    assert not hasattr(client, "bills")
+
+
 # ---- envelope normalization ------------------------------------------------
 
 
@@ -52,7 +74,7 @@ def test_normalize_envelope_value_field_odata_extracts_skiptoken() -> None:
     env = _normalize_envelope(
         {
             "value": [{"id": "a"}, {"id": "b"}],
-            "@odata.nextLink": "https://api.sandbox.tipalti.com/v2/payees?$skiptoken=tok-2&$top=2",
+            "@odata.nextLink": "https://api.sandbox.tipalti.com/api/v1/payees?$skiptoken=tok-2&$top=2",
         },
         limit=2,
     )
@@ -64,7 +86,7 @@ def test_normalize_envelope_odata_link_falls_back_to_skip() -> None:
     env = _normalize_envelope(
         {
             "value": [{"id": "a"}],
-            "@odata.nextLink": "https://api.sandbox.tipalti.com/v2/payees?$skip=10",
+            "@odata.nextLink": "https://api.sandbox.tipalti.com/api/v1/payees?$skip=10",
         },
         limit=1,
     )
@@ -93,7 +115,7 @@ def test_normalize_envelope_bare_array() -> None:
 
 
 def test_payee_list_happy_path(primed, respx_mock: respx.MockRouter) -> None:
-    route = respx_mock.get("https://api.sandbox.tipalti.com/v2/payees").mock(
+    route = respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees").mock(
         return_value=httpx.Response(
             200, json={"items": [{"id": "p1"}], "nextPageToken": "next-tok"}
         )
@@ -109,7 +131,7 @@ def test_payee_list_happy_path(primed, respx_mock: respx.MockRouter) -> None:
 
 
 def test_invoice_list_with_filter_and_cursor(primed, respx_mock: respx.MockRouter) -> None:
-    route = respx_mock.get("https://api.sandbox.tipalti.com/v2/invoices").mock(
+    route = respx_mock.get("https://api.sandbox.tipalti.com/api/v1/invoices").mock(
         return_value=httpx.Response(200, json={"items": [], "nextPageToken": ""})
     )
     with TipaltiClient(primed) as client:
@@ -119,17 +141,17 @@ def test_invoice_list_with_filter_and_cursor(primed, respx_mock: respx.MockRoute
     assert "$skiptoken=abc" in url or "%24skiptoken=abc" in url
 
 
-def test_bill_get_happy_path(primed, respx_mock: respx.MockRouter) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/bills/B-1").mock(
-        return_value=httpx.Response(200, json={"id": "B-1", "status": "Open"})
+def test_payment_get_happy_path(primed, respx_mock: respx.MockRouter) -> None:
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payments/PMT-1").mock(
+        return_value=httpx.Response(200, json={"id": "PMT-1", "status": "Paid"})
     )
     with TipaltiClient(primed) as client:
-        record = client.bills.get("B-1")
-    assert record == {"id": "B-1", "status": "Open"}
+        record = client.payments.get("PMT-1")
+    assert record == {"id": "PMT-1", "status": "Paid"}
 
 
 def test_get_404_includes_resource(primed, respx_mock: respx.MockRouter) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/payees/missing").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees/missing").mock(
         return_value=httpx.Response(404, json={})
     )
     with TipaltiClient(primed) as client:
@@ -140,7 +162,7 @@ def test_get_404_includes_resource(primed, respx_mock: respx.MockRouter) -> None
 
 
 def test_list_429_retries_once(primed, respx_mock: respx.MockRouter) -> None:
-    route = respx_mock.get("https://api.sandbox.tipalti.com/v2/payees").mock(
+    route = respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees").mock(
         side_effect=[
             httpx.Response(429, headers={"Retry-After": "0"}, json={}),
             httpx.Response(200, json={"items": []}),
@@ -153,7 +175,7 @@ def test_list_429_retries_once(primed, respx_mock: respx.MockRouter) -> None:
 
 
 def test_list_429_after_retry_raises(primed, respx_mock: respx.MockRouter) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/payees").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees").mock(
         return_value=httpx.Response(429, headers={"Retry-After": "0"}, json={})
     )
     with TipaltiClient(primed) as client:
@@ -163,7 +185,7 @@ def test_list_429_after_retry_raises(primed, respx_mock: respx.MockRouter) -> No
 
 
 def test_list_5xx_retries_then_succeeds(primed, respx_mock: respx.MockRouter) -> None:
-    route = respx_mock.get("https://api.sandbox.tipalti.com/v2/payees").mock(
+    route = respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees").mock(
         side_effect=[
             httpx.Response(503, json={}),
             httpx.Response(200, json={"items": [{"id": "p1"}]}),
@@ -186,7 +208,7 @@ def test_429_retry_after_does_not_oversleep(
 
     monkeypatch.setattr("tipalti.api.client.time.sleep", _record_sleep)
 
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/payees").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees").mock(
         side_effect=[
             httpx.Response(429, headers={"Retry-After": "7"}, json={}),
             httpx.Response(200, json={"items": []}),
