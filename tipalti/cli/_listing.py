@@ -1,8 +1,8 @@
 """Shared helpers for the noun-group ``list`` / ``get`` verbs.
 
-Each noun-group module (``payee.py``, ``invoice.py``, ``bill.py``) wires
-its argparse subparsers to handlers in this module. The actual API call
-is supplied as a callable so each noun can target its own resource.
+Each noun-group module (``payee.py``, ``invoice.py``, ``payment.py``, …)
+wires its argparse subparsers to handlers in this module. The actual API
+call is supplied as a callable so each noun can target its own resource.
 """
 
 from __future__ import annotations
