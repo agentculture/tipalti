@@ -195,9 +195,7 @@ class TipaltiClient:
         ``None`` — there is no principal payload to return. ``401`` reports
         ``unauthenticated`` (probe semantics); other HTTP errors propagate.
         """
-        response = self._raw_request(
-            "GET", "/api/v1/payer-entities", params={"$top": 1}
-        )
+        response = self._raw_request("GET", "/api/v1/payer-entities", params={"$top": 1})
         if response.status_code == 401:
             return {"status": "unauthenticated", "principal": None, "env": self._env.env}
         if response.status_code >= 400:

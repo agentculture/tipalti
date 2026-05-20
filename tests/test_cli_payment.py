@@ -33,8 +33,13 @@ def test_payment_list_markdown(
             200,
             json={
                 "items": [
-                    {"id": "PMT-1", "refCode": "R1", "status": "Paid",
-                     "amount": "100", "currency": "USD"},
+                    {
+                        "id": "PMT-1",
+                        "refCode": "R1",
+                        "status": "Paid",
+                        "amount": "100",
+                        "currency": "USD",
+                    },
                 ],
                 "nextPageToken": "",
             },
