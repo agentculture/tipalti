@@ -20,6 +20,7 @@ from tipalti.cli._commands import explain as _explain_cmd
 from tipalti.cli._commands import invoice as _invoice_cmd
 from tipalti.cli._commands import learn as _learn_cmd
 from tipalti.cli._commands import payee as _payee_cmd
+from tipalti.cli._commands import payment as _payment_cmd
 from tipalti.cli._commands import whoami as _whoami_cmd
 from tipalti.cli._errors import EXIT_USER_ERROR, AfiError
 from tipalti.cli._output import emit_error
@@ -50,6 +51,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _explain_cmd.register(sub)
     _whoami_cmd.register(sub)
     _payee_cmd.register(sub)
+    _payment_cmd.register(sub)
     _invoice_cmd.register(sub)
 
     return parser
