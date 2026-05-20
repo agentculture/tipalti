@@ -187,27 +187,22 @@ class TipaltiClient:
     # ---- whoami ---------------------------------------------------------------
 
     def whoami(self) -> dict[str, Any]:
-        """Probe the active principal. Returns ``{status, principal, env}``.
+        """Probe auth reachability. Returns ``{status, principal, env}``.
 
-        Treats 401 as ``unauthenticated`` (probe semantics, not an error).
-        Other HTTP errors propagate as :class:`AfiError`. The CLI layer
-        also catches the ``EXIT_ENV_ERROR`` path (missing creds) and maps
-        it to the same ``unauthenticated`` shape.
+        REST v2 exposes no identity endpoint, so this is a reachability +
+        auth probe against the cheapest documented collection
+        (``/api/v1/payer-entities`` with ``$top=1``). ``principal`` is always
+        ``None`` — there is no principal payload to return. ``401`` reports
+        ``unauthenticated`` (probe semantics); other HTTP errors propagate.
         """
-        response = self._raw_request("GET", "/v2/me")
+        response = self._raw_request(
+            "GET", "/api/v1/payer-entities", params={"$top": 1}
+        )
         if response.status_code == 401:
             return {"status": "unauthenticated", "principal": None, "env": self._env.env}
         if response.status_code >= 400:
             raise from_http_response(response)
-        try:
-            principal = response.json()
-        except ValueError:
-            principal = None
-        return {
-            "status": "authenticated",
-            "principal": principal,
-            "env": self._env.env,
-        }
+        return {"status": "authenticated", "principal": None, "env": self._env.env}
 
     # ---- internals ------------------------------------------------------------
 

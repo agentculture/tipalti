@@ -46,15 +46,7 @@ def cmd_whoami(args: argparse.Namespace) -> int:
     if result["status"] == "unauthenticated":
         return _emit_unauthenticated(json_mode=False, env=result.get("env"))
 
-    principal = result.get("principal")
     fields: dict[str, object] = {"status": "authenticated", "env": result.get("env")}
-    if isinstance(principal, dict):
-        for key in ("id", "name", "email", "subject", "sub", "client_id"):
-            value = principal.get(key)
-            if value is not None and key not in fields:
-                fields[key] = value
-    elif principal is not None:
-        fields["principal"] = principal
     emit_result(render_kv_md("tipalti whoami", fields), json_mode=False)
     return 0
 

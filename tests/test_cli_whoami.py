@@ -48,7 +48,7 @@ def test_whoami_401_is_unauthenticated_exit_zero(
     monkeypatch.setenv("TIPALTI_CLIENT_ID", "id")
     monkeypatch.setenv("TIPALTI_CLIENT_SECRET", "s")
     _prime_token()
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/me").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payer-entities").mock(
         return_value=httpx.Response(401, json={})
     )
     rc = main(["whoami", "--json"])
@@ -67,15 +67,14 @@ def test_whoami_authenticated_markdown(
     monkeypatch.setenv("TIPALTI_CLIENT_ID", "id")
     monkeypatch.setenv("TIPALTI_CLIENT_SECRET", "s")
     _prime_token()
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/me").mock(
-        return_value=httpx.Response(200, json={"id": "me-1", "name": "Alice"})
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payer-entities").mock(
+        return_value=httpx.Response(200, json={"items": [{"id": "e1"}]})
     )
     rc = main(["whoami"])
     assert rc == 0
     out = capsys.readouterr().out
     assert "authenticated" in out
-    assert "me-1" in out
-    assert "Alice" in out
+    assert "**env:** sandbox" in out
 
 
 def test_whoami_unknown_env_propagates_error(

@@ -228,18 +228,18 @@ def test_429_retry_after_does_not_oversleep(
 
 
 def test_whoami_authenticated(primed, respx_mock: respx.MockRouter) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/me").mock(
-        return_value=httpx.Response(200, json={"id": "me-1", "name": "Alice"})
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payer-entities").mock(
+        return_value=httpx.Response(200, json={"items": [{"id": "e1"}]})
     )
     with TipaltiClient(primed) as client:
         result = client.whoami()
     assert result["status"] == "authenticated"
-    assert result["principal"]["id"] == "me-1"
+    assert result["principal"] is None
     assert result["env"] == "sandbox"
 
 
 def test_whoami_401_returns_unauthenticated(primed, respx_mock: respx.MockRouter) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/me").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payer-entities").mock(
         return_value=httpx.Response(401, json={})
     )
     with TipaltiClient(primed) as client:
