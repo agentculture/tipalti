@@ -22,3 +22,14 @@ def test_no_args_prints_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert "learn" in out
     assert "explain" in out
     assert "whoami" in out
+
+
+def test_bill_noun_removed(capsys: pytest.CaptureFixture[str]) -> None:
+    # An invalid subcommand is rejected by argparse before dispatch, so the
+    # parser's error() raises SystemExit(EXIT_USER_ERROR) rather than main()
+    # returning a code.
+    with pytest.raises(SystemExit) as exc:
+        main(["bill", "list"])
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "invalid choice" in err or "bill" in err

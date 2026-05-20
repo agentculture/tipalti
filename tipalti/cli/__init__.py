@@ -16,7 +16,6 @@ import argparse
 import sys
 
 from tipalti import __version__
-from tipalti.cli._commands import bill as _bill_cmd
 from tipalti.cli._commands import explain as _explain_cmd
 from tipalti.cli._commands import invoice as _invoice_cmd
 from tipalti.cli._commands import learn as _learn_cmd
@@ -52,7 +51,6 @@ def _build_parser() -> argparse.ArgumentParser:
     _whoami_cmd.register(sub)
     _payee_cmd.register(sub)
     _invoice_cmd.register(sub)
-    _bill_cmd.register(sub)
 
     return parser
 
