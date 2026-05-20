@@ -44,22 +44,22 @@ def primed(isolated_cache):
 
 
 def test_all_resource_paths_use_api_v1_prefix(primed) -> None:
-    """Every registered resource group must live under /api/v1/."""
+    """Every registered resource group must live under the documented /api/v1/ path."""
+    expected = {
+        "payees": "/api/v1/payees",
+        "invoices": "/api/v1/invoices",
+        "payments": "/api/v1/payments",
+        "payer_entities": "/api/v1/payer-entities",
+        "gl_accounts": "/api/v1/gl-accounts",
+        "custom_fields": "/api/v1/custom-fields",
+        "payment_terms": "/api/v1/payment-terms",
+        "tax_codes": "/api/v1/tax-codes",
+    }
     with TipaltiClient(primed) as client:
-        groups = [
-            client.payees,
-            client.invoices,
-            client.payments,
-            client.payer_entities,
-            client.gl_accounts,
-            client.custom_fields,
-            client.payment_terms,
-            client.tax_codes,
-        ]
-    for group in groups:
-        assert group._path.startswith("/api/v1/"), group._path
-    # The bill noun is removed entirely.
-    assert not hasattr(client, "bills")
+        for attr, path in expected.items():
+            assert getattr(client, attr)._path == path
+        # The bill noun is removed entirely.
+        assert not hasattr(client, "bills")
 
 
 # ---- envelope normalization ------------------------------------------------
@@ -74,7 +74,9 @@ def test_normalize_envelope_value_field_odata_extracts_skiptoken() -> None:
     env = _normalize_envelope(
         {
             "value": [{"id": "a"}, {"id": "b"}],
-            "@odata.nextLink": "https://api.sandbox.tipalti.com/api/v1/payees?$skiptoken=tok-2&$top=2",
+            "@odata.nextLink": (
+                "https://api.sandbox.tipalti.com/api/v1/payees?$skiptoken=tok-2&$top=2"
+            ),
         },
         limit=2,
     )
