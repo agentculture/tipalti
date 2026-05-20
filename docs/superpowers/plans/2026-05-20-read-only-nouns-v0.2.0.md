@@ -9,6 +9,7 @@
 **Tech Stack:** Python 3, `httpx`, `argparse`, `pytest` + `respx` (HTTP mocking), `uv` for env/test running.
 
 **Conventions:**
+
 - Run tests with `uv run pytest <path> -v`.
 - CLI noun names are kebab-case (`payer-entity`); client attributes are underscored plurals (`payer_entities`).
 - Commit after each task. Branch is `feat/read-only-nouns-v0.2.0` (already created).
@@ -19,6 +20,7 @@
 ## Task 1: Correct resource path prefix `/v2/` → `/api/v1/` and drop the `bills` group
 
 **Files:**
+
 - Modify: `tipalti/api/client.py:155-157` (resource-group registrations)
 - Modify: `tipalti/api/client.py:192` (`whoami` probe path — handled in Task 2; here only the three resource groups + bill removal)
 - Test: `tests/test_api_client.py`
@@ -112,6 +114,7 @@ git commit -m "fix: re-base resource paths to /api/v1/ and drop bills group"
 ## Task 2: Repoint `whoami` to a `/api/v1/payer-entities` reachability probe
 
 **Files:**
+
 - Modify: `tipalti/api/client.py:184-205` (`whoami` method)
 - Modify: `tipalti/cli/_commands/whoami.py:49-58` (drop principal digging)
 - Test: `tests/test_api_client.py`, `tests/test_cli_whoami.py`
@@ -235,6 +238,7 @@ git commit -m "fix: repoint whoami to /api/v1/payer-entities reachability probe"
 ## Task 3: Remove the `bill` noun (command + registration + tests)
 
 **Files:**
+
 - Delete: `tipalti/cli/_commands/bill.py`
 - Delete: `tests/test_cli_bill.py`
 - Modify: `tipalti/cli/__init__.py:19,55` (drop import + registration)
@@ -298,6 +302,7 @@ git commit -m "feat: remove bill noun (not a real REST v2 resource)"
 This task establishes the pattern; Tasks 5-9 repeat it for the other five nouns.
 
 **Files:**
+
 - Create: `tipalti/cli/_commands/payment.py`
 - Modify: `tipalti/cli/__init__.py` (import + register)
 - Test: `tests/test_cli_payment.py`
@@ -460,6 +465,7 @@ git commit -m "feat: add payment list/get (read-only)"
 ## Task 5: Add the `payer-entity` noun
 
 **Files:**
+
 - Create: `tipalti/cli/_commands/payer_entity.py`
 - Modify: `tipalti/cli/__init__.py`
 - Test: `tests/test_cli_payer_entity.py`
@@ -603,6 +609,7 @@ git commit -m "feat: add payer-entity list/get (read-only)"
 ## Task 6: Add the `gl-account` noun
 
 **Files:**
+
 - Create: `tipalti/cli/_commands/gl_account.py`
 - Modify: `tipalti/cli/__init__.py`
 - Test: `tests/test_cli_gl_account.py`
@@ -743,6 +750,7 @@ git commit -m "feat: add gl-account list/get (read-only)"
 ## Task 7: Add the `custom-field` noun
 
 **Files:**
+
 - Create: `tipalti/cli/_commands/custom_field.py`
 - Modify: `tipalti/cli/__init__.py`
 - Test: `tests/test_cli_custom_field.py`
@@ -883,6 +891,7 @@ git commit -m "feat: add custom-field list/get (read-only)"
 ## Task 8: Add the `payment-term` noun
 
 **Files:**
+
 - Create: `tipalti/cli/_commands/payment_term.py`
 - Modify: `tipalti/cli/__init__.py`
 - Test: `tests/test_cli_payment_term.py`
@@ -1023,6 +1032,7 @@ git commit -m "feat: add payment-term list/get (read-only)"
 ## Task 9: Add the `tax-code` noun
 
 **Files:**
+
 - Create: `tipalti/cli/_commands/tax_code.py`
 - Modify: `tipalti/cli/__init__.py`
 - Test: `tests/test_cli_tax_code.py`
@@ -1163,6 +1173,7 @@ git commit -m "feat: add tax-code list/get (read-only)"
 ## Task 10: Update the `explain` catalog (add new nouns, drop bill, fix root + whoami)
 
 **Files:**
+
 - Modify: `tipalti/explain/catalog.py`
 - Test: `tests/test_cli_smoke.py` (or wherever explain is exercised)
 
@@ -1328,6 +1339,7 @@ git commit -m "docs: explain catalog for new nouns; drop bill; update root + who
 ## Task 11: Refresh `learn` copy
 
 **Files:**
+
 - Modify: `tipalti/cli/_commands/learn.py`
 - Test: `tests/test_cli_learn.py`
 
@@ -1378,6 +1390,7 @@ git commit -m "docs: refresh learn copy for new nouns; drop bill"
 ## Task 12: Full suite + lint, version bump, CLAUDE.md, CHANGELOG
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 - Modify (via script): `pyproject.toml`, `CHANGELOG.md`
 
@@ -1394,6 +1407,7 @@ Expected: clean. If `black`/`isort` complain, run `uv run black tipalti tests &&
 - [ ] **Step 3: Update CLAUDE.md**
 
 Edit `CLAUDE.md`:
+
 - **Status** section: bump to `v0.2.0`; note "adds payment, payer-entity, gl-account, custom-field, payment-term, tax-code read verbs; corrects REST paths to `/api/v1/`; removes the `bill` noun."
 - **What this project is**: update the noun list (payees, invoices, payments, payer-entities, GL accounts, custom fields, payment terms, tax codes); drop "Bills".
 - **Project shape** tree under `_commands/`: remove `bill.py`, add the six new modules.
@@ -1449,6 +1463,7 @@ git commit -m "chore: bump to 0.2.0; update CLAUDE.md and CHANGELOG"
 ## Task 13: Markdown lint the new docs
 
 **Files:**
+
 - The spec + plan + CHANGELOG + CLAUDE.md
 
 - [ ] **Step 1: Lint**

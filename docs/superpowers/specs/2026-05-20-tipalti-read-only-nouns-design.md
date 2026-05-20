@@ -176,7 +176,7 @@ TDD throughout (write failing test, then implement). Mirror the existing split:
 
 ## File-by-file change summary
 
-**Modified**
+### Modified
 
 - `tipalti/api/client.py` — re-base paths, drop `bills`, add 6 groups, repoint
   `whoami` probe to `/api/v1/payer-entities` (principal always `None`).
@@ -193,12 +193,12 @@ TDD throughout (write failing test, then implement). Mirror the existing split:
 - `pyproject.toml`, `CHANGELOG.md` — version bump.
 - `CLAUDE.md` — status + noun list + tree.
 
-**Added**
+### Added
 
 - `tipalti/cli/_commands/{payment,payer_entity,gl_account,custom_field,payment_term,tax_code}.py`
 - `tests/test_cli_{payment,payer_entity,gl_account,custom_field,payment_term,tax_code}.py`
 
-**Removed**
+### Removed
 
 - `tipalti/cli/_commands/bill.py`
 - `tests/test_cli_bill.py`

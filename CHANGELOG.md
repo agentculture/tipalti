@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/). This project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-05-20
+
+### Added
+
+- tipalti payment list / payment get — read-only Payments verbs (REST v2)
+- tipalti payer-entity list / payer-entity get — read-only Payer Entities verbs
+- tipalti gl-account, custom-field, payment-term, tax-code — read-only list/get verbs
+- explain entries (noun + list + get) for all six new nouns
+
+### Changed
+
+- Resource paths corrected from `/v2/...` to the documented `/api/v1/...`
+- tipalti whoami now probes `/api/v1/payer-entities` (REST v2 has no identity
+  endpoint); it reports reachability + auth only, with no principal payload
+- learn copy expanded to cover the new nouns
+
+### Removed
+
+- tipalti bill list / bill get — bills are not a standalone REST v2 resource
+  (they are unified under invoices); the `/v2/bills` path never existed
+
 ## [0.1.0] - 2026-05-01
 
 ### Added
