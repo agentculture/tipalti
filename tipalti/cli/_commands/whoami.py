@@ -54,7 +54,7 @@ def cmd_whoami(args: argparse.Namespace) -> int:
 def register(sub: argparse._SubParsersAction) -> None:
     p = sub.add_parser(
         "whoami",
-        help="Print the active Tipalti principal (auth probe; exit 0 even when unauth).",
+        help="Probe Tipalti auth reachability (no identity payload; exit 0 even when unauth).",
     )
     p.add_argument("--json", action="store_true", help="Emit structured JSON.")
     p.set_defaults(func=cmd_whoami)

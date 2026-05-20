@@ -3,26 +3,12 @@
 from __future__ import annotations
 
 import json
-import time
 
 import httpx
 import pytest
 import respx
 
-from tipalti.api._env import load_env
-from tipalti.api.auth import CachedToken, _client_id_hash, write_cache
 from tipalti.cli import main
-
-
-@pytest.fixture
-def auth(monkeypatch: pytest.MonkeyPatch, isolated_cache) -> None:
-    monkeypatch.setenv("TIPALTI_CLIENT_ID", "id-1")
-    monkeypatch.setenv("TIPALTI_CLIENT_SECRET", "secret")
-    env = load_env()
-    write_cache(
-        env,
-        CachedToken("fake", int(time.time()) + 3600, env.env, _client_id_hash(env.client_id)),
-    )
 
 
 def test_tax_code_list_markdown(

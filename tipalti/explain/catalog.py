@@ -144,7 +144,7 @@ The cache is automatically invalidated when `TIPALTI_CLIENT_ID` rotates.
 ## Diagnostics
 
     tipalti whoami         # is auth working?
-    tipalti whoami --json  # principal payload
+    tipalti whoami --json  # status/env payload (no principal; REST v2 has none)
 """
 
 _PAYEE = """\
