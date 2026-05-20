@@ -84,12 +84,23 @@ self.payment_terms  = _ResourceGroup(self, "/api/v1/payment-terms",  "payment-te
 self.tax_codes      = _ResourceGroup(self, "/api/v1/tax-codes",      "tax-code")
 ```
 
-`whoami` continues to probe `/v2/me` → re-base to `/api/v1/me` and confirm the
-documented probe path (the docs index does not list a dedicated `me`
-resource; if `/api/v1/me` is absent, fall back to a cheap `payees` list with
-`$top=1` as the probe, preserving the `unauthenticated`-on-401 semantics).
-**Open implementation detail — resolve during the plan by checking the live
-reference; do not guess the path silently.**
+`whoami` currently probes `/v2/me`. **Resolved against the live reference:**
+REST v2 has **no identity / `me` endpoint**. `whoami` therefore becomes a pure
+auth-reachability probe against the documented cheapest collection,
+`GET /api/v1/payer-entities?$top=1`:
+
+- `401` → `{status: "unauthenticated", principal: None, env}` (exit 0).
+- `200` → `{status: "authenticated", principal: None, env}` — there is no
+  identity payload to return, so `principal` is always `None` when reachable.
+- other `>= 400` → raise via `from_http_response` (unchanged error semantics).
+- missing creds → `unauthenticated` (handled at the CLI layer, unchanged).
+
+This is a forced consequence of the path correction (the old `/v2/me` never
+existed). The JSON shape is preserved (`status`/`principal`/`env`); the only
+behavioral change is that `principal` is no longer populated, since the API
+exposes no principal. The `_WHOAMI` explain entry and `whoami.py` markdown
+(which currently digs `id`/`name`/`email` out of `principal`) are updated to
+state that `whoami` confirms reachability + auth only, not identity.
 
 No other change to `_ResourceGroup`, `_normalize_envelope`, retry, or error
 mapping — the new nouns are pure reuse.
@@ -167,11 +178,17 @@ TDD throughout (write failing test, then implement). Mirror the existing split:
 
 **Modified**
 
-- `tipalti/api/client.py` — re-base paths, drop `bills`, add 6 groups.
+- `tipalti/api/client.py` — re-base paths, drop `bills`, add 6 groups, repoint
+  `whoami` probe to `/api/v1/payer-entities` (principal always `None`).
 - `tipalti/cli/__init__.py` — register 6 modules, drop `bill`.
-- `tipalti/explain/catalog.py` — add new entries, drop bill entries, update root.
+- `tipalti/cli/_commands/whoami.py` — drop principal-field digging; render
+  status + env only.
+- `tipalti/explain/catalog.py` — add new entries, drop bill entries, update
+  root and `_WHOAMI`.
 - `tipalti/cli/_commands/learn.py` — refresh copy.
-- `tests/test_api_client.py` — path assertions + prefix regression guard.
+- `tests/test_api_client.py` — path assertions + prefix regression guard, update
+  `whoami` + drop `bill` get test.
+- `tests/test_cli_whoami.py` — repoint probe URL, drop principal expectations.
 - `tests/test_cli_smoke.py` — noun-set updates if enumerated.
 - `pyproject.toml`, `CHANGELOG.md` — version bump.
 - `CLAUDE.md` — status + noun list + tree.
