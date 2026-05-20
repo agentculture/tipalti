@@ -6,6 +6,7 @@ import pytest
 
 from tipalti import __version__
 from tipalti.cli import main
+from tipalti.explain import known_paths
 
 
 def test_version_flag(capsys: pytest.CaptureFixture[str]) -> None:
@@ -33,3 +34,10 @@ def test_bill_noun_removed(capsys: pytest.CaptureFixture[str]) -> None:
     assert exc.value.code == 1
     err = capsys.readouterr().err
     assert "invalid choice" in err or "bill" in err
+
+
+def test_explain_drops_bill() -> None:
+    # Per-noun explain coverage (CLI level) lives in
+    # tests/test_cli_learn.py::test_explain_new_entries; here we only assert
+    # the removed bill noun has no lingering catalog entry.
+    assert ("bill",) not in known_paths()
