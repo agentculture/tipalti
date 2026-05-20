@@ -28,7 +28,7 @@ def auth(monkeypatch: pytest.MonkeyPatch, isolated_cache) -> None:
 def test_invoice_list_json(
     auth: None, capsys: pytest.CaptureFixture[str], respx_mock: respx.MockRouter
 ) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/invoices").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/invoices").mock(
         return_value=httpx.Response(200, json={"items": [{"id": "inv-1", "status": "Approved"}]})
     )
     rc = main(["invoice", "list", "--json"])
@@ -40,7 +40,7 @@ def test_invoice_list_json(
 def test_invoice_get_markdown(
     auth: None, capsys: pytest.CaptureFixture[str], respx_mock: respx.MockRouter
 ) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/invoices/inv-1").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/invoices/inv-1").mock(
         return_value=httpx.Response(200, json={"id": "inv-1", "amount": 100, "status": "Approved"})
     )
     rc = main(["invoice", "get", "inv-1"])
@@ -53,7 +53,7 @@ def test_invoice_get_markdown(
 def test_invoice_list_next_cursor_footer(
     auth: None, capsys: pytest.CaptureFixture[str], respx_mock: respx.MockRouter
 ) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/invoices").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/invoices").mock(
         return_value=httpx.Response(
             200,
             json={
