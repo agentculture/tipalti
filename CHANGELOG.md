@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/). This project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-05-21
+
+### Added
+
+- Vendored the `communicate` skill from steward
+  (`.claude/skills/communicate/`) — cross-repo + mesh communication:
+  `post-issue.sh` / `post-comment.sh` / `fetch-issues.sh` (thin wrappers
+  around the `agtag` CLI, `agtag issue post|reply|fetch`) and
+  `mesh-message.sh` (a `culture channel message` wrapper). Resolves the
+  steward auto-broadcast resync brief (issue #11). Issue I/O auto-signs
+  from the local `culture.yaml`, falling back to the repo basename —
+  tipalti has no `culture.yaml`, so the signature resolves to
+  `- tipalti (Claude)`. SKILL.md prose is identifier-adapted (consumer
+  references `steward` → `tipalti`, `cicd` → `pr-review`); upstream and
+  historical attributions are left intact, and the supplier-role
+  broadcast section (`steward announce-skill-update`) is preserved
+  verbatim since downstream vendors don't broadcast. The supplier-only
+  `scripts/templates/skill-update-brief.md` is intentionally **not**
+  vendored — it is consumed by steward-cli's broadcast verb (absent
+  here) and documents a `../steward` sibling-checkout recipe that
+  conflicts with tipalti's no-sibling-dependency rule; tipalti vendors
+  only the four primitive scripts.
+
+### Removed
+
+- Standalone `gh-issues` skill (`.claude/skills/gh-issues/`). Its sole
+  verb is superseded by `communicate`'s `fetch-issues.sh`, mirroring
+  steward's 0.9.1 absorption of `gh-issues` into `communicate`.
+
 ## [0.2.0] - 2026-05-20
 
 ### Added
