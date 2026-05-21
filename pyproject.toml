@@ -1,6 +1,6 @@
 [project]
 name = "tipalti"
-version = "0.4.0"
+version = "0.4.1"
 description = "Tipalti — CLI for Tipalti Solutions."
 readme = "README.md"
 license = "MIT"

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/). This project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-05-21
+
+### Added
+
+- README disclaimer clarifying that `tipalti` is an unofficial, independent
+  project — not affiliated with, endorsed by, or sponsored by Tipalti
+  Solutions Ltd. Added as a note under the title and an affiliation line in
+  the License section. Docs-only; the CLI surface is unchanged.
+
 ## [0.4.0] - 2026-05-21
 
 ### Added

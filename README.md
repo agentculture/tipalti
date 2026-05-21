@@ -1,5 +1,9 @@
 # tipalti
 
+> **Unofficial.** Independent project, not affiliated with, endorsed by, or
+> sponsored by Tipalti Solutions Ltd. "Tipalti" is a trademark of its
+> respective owner.
+
 CLI for Tipalti Solutions — scaffolded from the AgentCulture sibling pattern.
 Read-only explorer over Tipalti REST v2 (Payees, Invoices, Bills) plus the
 agent-first affordances (`learn`, `explain`, `whoami`).
@@ -77,3 +81,6 @@ canonical templates.
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
+
+Unofficial / independent project. Not affiliated with or endorsed by
+Tipalti Solutions Ltd.
