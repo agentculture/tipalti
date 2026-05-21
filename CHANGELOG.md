@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/). This project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-05-21
+
+### Added
+
+- README disclaimer clarifying that `tipalti` is an unofficial, independent
+  project — not affiliated with, endorsed by, or sponsored by Tipalti
+  Solutions Ltd. Added as a note under the title and an affiliation line in
+  the License section. Docs-only; the CLI surface is unchanged.
+
+### Changed
+
+- `pyproject.toml` package `description` now reads "Unofficial CLI for the
+  Tipalti REST API — independent project, not affiliated with Tipalti
+  Solutions Ltd." (was "Tipalti — CLI for Tipalti Solutions."), so the
+  published PyPI metadata matches the README disclaimer instead of
+  presenting as first-party.
+
 ## [0.4.0] - 2026-05-21
 
 ### Added
