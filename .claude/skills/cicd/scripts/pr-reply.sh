@@ -30,7 +30,11 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NICK="$("$SCRIPT_DIR/_resolve-nick.sh")"
 SIG="- ${NICK} (Claude)"
-if ! printf '%s' "$BODY" | grep -qFx -- "$SIG"; then
+# Treat the body as already signed if its last non-empty line is any
+# Claude signature — the canonical `- <nick> (Claude)` or the legacy
+# `- Claude` — so a pre-signed body never gets a second signature.
+LAST_LINE="$(printf '%s' "$BODY" | awk 'NF {last=$0} END {print last}')"
+if ! printf '%s\n' "$LAST_LINE" | grep -qE '^[[:space:]]*-[[:space:]]+(.+\(Claude\)|Claude)[[:space:]]*$'; then
     BODY="${BODY}
 
 ${SIG}"
