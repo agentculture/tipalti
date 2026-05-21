@@ -16,11 +16,16 @@ import argparse
 import sys
 
 from tipalti import __version__
-from tipalti.cli._commands import bill as _bill_cmd
+from tipalti.cli._commands import custom_field as _custom_field_cmd
 from tipalti.cli._commands import explain as _explain_cmd
+from tipalti.cli._commands import gl_account as _gl_account_cmd
 from tipalti.cli._commands import invoice as _invoice_cmd
 from tipalti.cli._commands import learn as _learn_cmd
 from tipalti.cli._commands import payee as _payee_cmd
+from tipalti.cli._commands import payer_entity as _payer_entity_cmd
+from tipalti.cli._commands import payment as _payment_cmd
+from tipalti.cli._commands import payment_term as _payment_term_cmd
+from tipalti.cli._commands import tax_code as _tax_code_cmd
 from tipalti.cli._commands import whoami as _whoami_cmd
 from tipalti.cli._errors import EXIT_USER_ERROR, AfiError
 from tipalti.cli._output import emit_error
@@ -51,8 +56,13 @@ def _build_parser() -> argparse.ArgumentParser:
     _explain_cmd.register(sub)
     _whoami_cmd.register(sub)
     _payee_cmd.register(sub)
+    _payment_cmd.register(sub)
+    _payer_entity_cmd.register(sub)
+    _gl_account_cmd.register(sub)
+    _custom_field_cmd.register(sub)
+    _payment_term_cmd.register(sub)
+    _tax_code_cmd.register(sub)
     _invoice_cmd.register(sub)
-    _bill_cmd.register(sub)
 
     return parser
 

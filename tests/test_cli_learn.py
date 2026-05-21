@@ -22,9 +22,34 @@ def test_learn_json_parseable(capsys: pytest.CaptureFixture[str]) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload["tool"] == "tipalti"
     assert any(c["path"] == ["whoami"] for c in payload["commands"])
-    for path in (["payee", "list"], ["invoice", "list"], ["bill", "list"]):
+    for path in (
+        ["payee", "list"],
+        ["invoice", "list"],
+        ["payment", "list"],
+        ["payer-entity", "list"],
+        ["gl-account", "list"],
+        ["custom-field", "list"],
+        ["payment-term", "list"],
+        ["tax-code", "list"],
+    ):
         assert any(c["path"] == path for c in payload["commands"])
+    assert not any(c["path"] == ["bill", "list"] for c in payload["commands"])
     assert "TIPALTI_CLIENT_ID" in payload["env_vars"]
+
+
+def test_learn_mentions_new_nouns(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["learn"]) == 0
+    out = capsys.readouterr().out
+    for noun in (
+        "payment",
+        "payer-entity",
+        "gl-account",
+        "custom-field",
+        "payment-term",
+        "tax-code",
+    ):
+        assert noun in out
+    assert "bill" not in out
 
 
 def test_explain_self(capsys: pytest.CaptureFixture[str]) -> None:
@@ -42,9 +67,24 @@ def test_explain_self(capsys: pytest.CaptureFixture[str]) -> None:
         ["invoice"],
         ["invoice", "list"],
         ["invoice", "get"],
-        ["bill"],
-        ["bill", "list"],
-        ["bill", "get"],
+        ["payment"],
+        ["payment", "list"],
+        ["payment", "get"],
+        ["payer-entity"],
+        ["payer-entity", "list"],
+        ["payer-entity", "get"],
+        ["gl-account"],
+        ["gl-account", "list"],
+        ["gl-account", "get"],
+        ["custom-field"],
+        ["custom-field", "list"],
+        ["custom-field", "get"],
+        ["payment-term"],
+        ["payment-term", "list"],
+        ["payment-term", "get"],
+        ["tax-code"],
+        ["tax-code", "list"],
+        ["tax-code", "get"],
     ],
 )
 def test_explain_new_entries(capsys: pytest.CaptureFixture[str], path: list[str]) -> None:

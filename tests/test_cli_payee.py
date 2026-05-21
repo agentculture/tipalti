@@ -3,32 +3,18 @@
 from __future__ import annotations
 
 import json
-import time
 
 import httpx
 import pytest
 import respx
 
-from tipalti.api._env import load_env
-from tipalti.api.auth import CachedToken, _client_id_hash, write_cache
 from tipalti.cli import main
-
-
-@pytest.fixture
-def auth(monkeypatch: pytest.MonkeyPatch, isolated_cache) -> None:
-    monkeypatch.setenv("TIPALTI_CLIENT_ID", "id-1")
-    monkeypatch.setenv("TIPALTI_CLIENT_SECRET", "secret")
-    env = load_env()
-    write_cache(
-        env,
-        CachedToken("fake", int(time.time()) + 3600, env.env, _client_id_hash(env.client_id)),
-    )
 
 
 def test_payee_list_markdown(
     auth: None, capsys: pytest.CaptureFixture[str], respx_mock: respx.MockRouter
 ) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/payees").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -52,7 +38,7 @@ def test_payee_list_markdown(
 def test_payee_list_json(
     auth: None, capsys: pytest.CaptureFixture[str], respx_mock: respx.MockRouter
 ) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/payees").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees").mock(
         return_value=httpx.Response(
             200,
             json={
@@ -71,7 +57,7 @@ def test_payee_list_json(
 def test_payee_list_filter_forwarded(
     auth: None, capsys: pytest.CaptureFixture[str], respx_mock: respx.MockRouter
 ) -> None:
-    route = respx_mock.get("https://api.sandbox.tipalti.com/v2/payees").mock(
+    route = respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees").mock(
         return_value=httpx.Response(200, json={"items": []})
     )
     main(["payee", "list", "--filter", "status eq 'Active'", "--json"])
@@ -83,7 +69,7 @@ def test_payee_list_filter_forwarded(
 def test_payee_get_404_message(
     auth: None, capsys: pytest.CaptureFixture[str], respx_mock: respx.MockRouter
 ) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/payees/missing").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees/missing").mock(
         return_value=httpx.Response(404, json={})
     )
     rc = main(["payee", "get", "missing"])
@@ -95,7 +81,7 @@ def test_payee_get_404_message(
 def test_payee_get_markdown(
     auth: None, capsys: pytest.CaptureFixture[str], respx_mock: respx.MockRouter
 ) -> None:
-    respx_mock.get("https://api.sandbox.tipalti.com/v2/payees/p1").mock(
+    respx_mock.get("https://api.sandbox.tipalti.com/api/v1/payees/p1").mock(
         return_value=httpx.Response(
             200, json={"id": "p1", "name": "Alice", "address": {"city": "NYC"}}
         )

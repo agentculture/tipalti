@@ -12,9 +12,10 @@ from __future__ import annotations
 _ROOT = """\
 # tipalti
 
-`tipalti` is the command-line interface for Tipalti Solutions. v0.1.0
+`tipalti` is the command-line interface for Tipalti Solutions. v0.2.0
 ships a read-only explorer over Tipalti's REST v2 API (Payees, Invoices,
-Bills) plus the agent-first affordances (`learn`, `explain`, `whoami`).
+Payments, Payer Entities, GL Accounts, Custom Fields, Payment Terms, Tax
+Codes) plus the agent-first affordances (`learn`, `explain`, `whoami`).
 
 The CLI is scaffolded from the AgentCulture sibling pattern. Its primary
 consumer is an LLM agent: every verb supports `--json`, errors carry
@@ -29,7 +30,12 @@ HTTP request.
   when no credentials are configured).
 - `tipalti payee list` / `tipalti payee get <id>` — payees (read-only).
 - `tipalti invoice list` / `tipalti invoice get <id>` — invoices.
-- `tipalti bill list` / `tipalti bill get <id>` — bills.
+- `tipalti payment list` / `tipalti payment get <id>` — payments.
+- `tipalti payer-entity list` / `tipalti payer-entity get <id>` — payer entities.
+- `tipalti gl-account list` / `tipalti gl-account get <id>` — GL accounts.
+- `tipalti custom-field list` / `tipalti custom-field get <id>` — custom fields.
+- `tipalti payment-term list` / `tipalti payment-term get <id>` — payment terms.
+- `tipalti tax-code list` / `tipalti tax-code get <id>` — tax codes.
 
 ## Authentication
 
@@ -49,7 +55,12 @@ See `tipalti explain auth`.
 - `tipalti explain whoami`
 - `tipalti explain payee`
 - `tipalti explain invoice`
-- `tipalti explain bill`
+- `tipalti explain payment`
+- `tipalti explain payer-entity`
+- `tipalti explain gl-account`
+- `tipalti explain custom-field`
+- `tipalti explain payment-term`
+- `tipalti explain tax-code`
 - `tipalti explain auth`
 """
 
@@ -84,13 +95,15 @@ Prints markdown documentation for any noun/verb path. Unlike `--help`
 _WHOAMI = """\
 # tipalti whoami
 
-Probes the active Tipalti principal using credentials from the env vars
-documented in `tipalti explain auth`.
+Probes Tipalti auth reachability using the credentials documented in
+`tipalti explain auth`. REST v2 exposes no identity endpoint, so `whoami`
+confirms that credentials authenticate and the API is reachable — it does
+not return a principal identity (`principal` is always `null`).
 
 When no credentials are configured, when `TIPALTI_CLIENT_ID/SECRET` are
-empty, or when the token endpoint returns 401, `whoami` reports
-`unauthenticated` and exits `0` (probe, not gate). Other API/transport
-errors propagate normally with `EXIT_USER_ERROR` / `EXIT_ENV_ERROR`.
+empty, or when the probe returns 401, `whoami` reports `unauthenticated`
+and exits `0` (probe, not gate). Other API/transport errors propagate
+normally with `EXIT_USER_ERROR` / `EXIT_ENV_ERROR`.
 
 ## Usage
 
@@ -131,7 +144,7 @@ The cache is automatically invalidated when `TIPALTI_CLIENT_ID` rotates.
 ## Diagnostics
 
     tipalti whoami         # is auth working?
-    tipalti whoami --json  # principal payload
+    tipalti whoami --json  # status/env payload (no principal; REST v2 has none)
 """
 
 _PAYEE = """\
@@ -226,35 +239,190 @@ _INVOICE_GET = """\
 Fetches a single invoice by id. `--json` emits the raw API record.
 """
 
-_BILL = """\
-# tipalti bill
+_PAYMENT = """\
+# tipalti payment
 
-Read-only verbs over Tipalti's Bills resource (REST v2).
+Read-only verbs over Tipalti's Payments resource (REST v2).
 
 ## Verbs
 
-- `tipalti bill list` — list bills with optional `--filter`, `--limit`,
-  `--cursor`.
-- `tipalti bill get <id>` — fetch one bill by id.
+- `tipalti payment list` — list payments with optional `--filter`,
+  `--limit`, `--cursor`.
+- `tipalti payment get <id>` — fetch one payment by id.
 
 ## Usage
 
-    tipalti bill list --limit 50
-    tipalti bill list --filter "status eq 'Open'"
-    tipalti bill get <id>
+    tipalti payment list --limit 50
+    tipalti payment list --filter "status eq 'Paid'"
+    tipalti payment get <id>
 """
 
-_BILL_LIST = """\
-# tipalti bill list
+_PAYMENT_LIST = """\
+# tipalti payment list
 
-Lists bills from Tipalti REST v2. Same flag set as `tipalti payee list`:
+Lists payments from Tipalti REST v2. Same flag set as `tipalti payee list`:
 `--limit`, `--cursor`, `--filter`, `--json`. One HTTP request per call.
 """
 
-_BILL_GET = """\
-# tipalti bill get <id>
+_PAYMENT_GET = """\
+# tipalti payment get <id>
 
-Fetches a single bill by id. `--json` emits the raw API record.
+Fetches a single payment by id. `--json` emits the raw API record.
+"""
+
+_PAYER_ENTITY = """\
+# tipalti payer-entity
+
+Read-only verbs over Tipalti's Payer Entities resource (REST v2). Payer
+entities back Tipalti's multi-entity architecture.
+
+## Verbs
+
+- `tipalti payer-entity list` — list payer entities with optional
+  `--filter`, `--limit`, `--cursor`.
+- `tipalti payer-entity get <id>` — fetch one payer entity by id.
+
+## Usage
+
+    tipalti payer-entity list --limit 50
+    tipalti payer-entity get <id>
+"""
+
+_PAYER_ENTITY_LIST = """\
+# tipalti payer-entity list
+
+Lists payer entities from Tipalti REST v2. Same flag set as
+`tipalti payee list`: `--limit`, `--cursor`, `--filter`, `--json`. One HTTP
+request per call.
+"""
+
+_PAYER_ENTITY_GET = """\
+# tipalti payer-entity get <id>
+
+Fetches a single payer entity by id. `--json` emits the raw API record.
+"""
+
+_GL_ACCOUNT = """\
+# tipalti gl-account
+
+Read-only verbs over Tipalti's GL Accounts resource (REST v2).
+
+## Verbs
+
+- `tipalti gl-account list` — list GL accounts with optional `--filter`,
+  `--limit`, `--cursor`.
+- `tipalti gl-account get <id>` — fetch one GL account by id.
+
+## Usage
+
+    tipalti gl-account list --limit 50
+    tipalti gl-account get <id>
+"""
+
+_GL_ACCOUNT_LIST = """\
+# tipalti gl-account list
+
+Lists GL accounts from Tipalti REST v2. Same flag set as
+`tipalti payee list`: `--limit`, `--cursor`, `--filter`, `--json`. One HTTP
+request per call.
+"""
+
+_GL_ACCOUNT_GET = """\
+# tipalti gl-account get <id>
+
+Fetches a single GL account by id. `--json` emits the raw API record.
+"""
+
+_CUSTOM_FIELD = """\
+# tipalti custom-field
+
+Read-only verbs over Tipalti's Custom Fields resource (REST v2).
+
+## Verbs
+
+- `tipalti custom-field list` — list custom fields with optional
+  `--filter`, `--limit`, `--cursor`.
+- `tipalti custom-field get <id>` — fetch one custom field by id.
+
+## Usage
+
+    tipalti custom-field list --limit 50
+    tipalti custom-field get <id>
+"""
+
+_CUSTOM_FIELD_LIST = """\
+# tipalti custom-field list
+
+Lists custom fields from Tipalti REST v2. Same flag set as
+`tipalti payee list`: `--limit`, `--cursor`, `--filter`, `--json`. One HTTP
+request per call.
+"""
+
+_CUSTOM_FIELD_GET = """\
+# tipalti custom-field get <id>
+
+Fetches a single custom field by id. `--json` emits the raw API record.
+"""
+
+_PAYMENT_TERM = """\
+# tipalti payment-term
+
+Read-only verbs over Tipalti's Payment Terms resource (REST v2).
+
+## Verbs
+
+- `tipalti payment-term list` — list payment terms with optional
+  `--filter`, `--limit`, `--cursor`.
+- `tipalti payment-term get <id>` — fetch one payment term by id.
+
+## Usage
+
+    tipalti payment-term list --limit 50
+    tipalti payment-term get <id>
+"""
+
+_PAYMENT_TERM_LIST = """\
+# tipalti payment-term list
+
+Lists payment terms from Tipalti REST v2. Same flag set as
+`tipalti payee list`: `--limit`, `--cursor`, `--filter`, `--json`. One HTTP
+request per call.
+"""
+
+_PAYMENT_TERM_GET = """\
+# tipalti payment-term get <id>
+
+Fetches a single payment term by id. `--json` emits the raw API record.
+"""
+
+_TAX_CODE = """\
+# tipalti tax-code
+
+Read-only verbs over Tipalti's Tax Codes resource (REST v2).
+
+## Verbs
+
+- `tipalti tax-code list` — list tax codes with optional `--filter`,
+  `--limit`, `--cursor`.
+- `tipalti tax-code get <id>` — fetch one tax code by id.
+
+## Usage
+
+    tipalti tax-code list --limit 50
+    tipalti tax-code get <id>
+"""
+
+_TAX_CODE_LIST = """\
+# tipalti tax-code list
+
+Lists tax codes from Tipalti REST v2. Same flag set as `tipalti payee list`:
+`--limit`, `--cursor`, `--filter`, `--json`. One HTTP request per call.
+"""
+
+_TAX_CODE_GET = """\
+# tipalti tax-code get <id>
+
+Fetches a single tax code by id. `--json` emits the raw API record.
 """
 
 
@@ -271,7 +439,22 @@ ENTRIES: dict[tuple[str, ...], str] = {
     ("invoice",): _INVOICE,
     ("invoice", "list"): _INVOICE_LIST,
     ("invoice", "get"): _INVOICE_GET,
-    ("bill",): _BILL,
-    ("bill", "list"): _BILL_LIST,
-    ("bill", "get"): _BILL_GET,
+    ("payment",): _PAYMENT,
+    ("payment", "list"): _PAYMENT_LIST,
+    ("payment", "get"): _PAYMENT_GET,
+    ("payer-entity",): _PAYER_ENTITY,
+    ("payer-entity", "list"): _PAYER_ENTITY_LIST,
+    ("payer-entity", "get"): _PAYER_ENTITY_GET,
+    ("gl-account",): _GL_ACCOUNT,
+    ("gl-account", "list"): _GL_ACCOUNT_LIST,
+    ("gl-account", "get"): _GL_ACCOUNT_GET,
+    ("custom-field",): _CUSTOM_FIELD,
+    ("custom-field", "list"): _CUSTOM_FIELD_LIST,
+    ("custom-field", "get"): _CUSTOM_FIELD_GET,
+    ("payment-term",): _PAYMENT_TERM,
+    ("payment-term", "list"): _PAYMENT_TERM_LIST,
+    ("payment-term", "get"): _PAYMENT_TERM_GET,
+    ("tax-code",): _TAX_CODE,
+    ("tax-code", "list"): _TAX_CODE_LIST,
+    ("tax-code", "get"): _TAX_CODE_GET,
 }

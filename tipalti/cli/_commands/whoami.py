@@ -46,15 +46,7 @@ def cmd_whoami(args: argparse.Namespace) -> int:
     if result["status"] == "unauthenticated":
         return _emit_unauthenticated(json_mode=False, env=result.get("env"))
 
-    principal = result.get("principal")
     fields: dict[str, object] = {"status": "authenticated", "env": result.get("env")}
-    if isinstance(principal, dict):
-        for key in ("id", "name", "email", "subject", "sub", "client_id"):
-            value = principal.get(key)
-            if value is not None and key not in fields:
-                fields[key] = value
-    elif principal is not None:
-        fields["principal"] = principal
     emit_result(render_kv_md("tipalti whoami", fields), json_mode=False)
     return 0
 
@@ -62,7 +54,7 @@ def cmd_whoami(args: argparse.Namespace) -> int:
 def register(sub: argparse._SubParsersAction) -> None:
     p = sub.add_parser(
         "whoami",
-        help="Print the active Tipalti principal (auth probe; exit 0 even when unauth).",
+        help="Probe Tipalti auth reachability (no identity payload; exit 0 even when unauth).",
     )
     p.add_argument("--json", action="store_true", help="Emit structured JSON.")
     p.set_defaults(func=cmd_whoami)

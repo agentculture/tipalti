@@ -13,8 +13,9 @@ tipalti — CLI for Tipalti Solutions.
 Purpose
 -------
 tipalti is a command-line interface for working with Tipalti Solutions
-through their REST v2 API. v0.1.0 ships a read-only explorer over the
-Payees, Invoices, and Bills resources, plus the agent-first affordances
+through their REST v2 API. v0.2.0 ships a read-only explorer over the
+Payees, Invoices, Payments, Payer Entities, GL Accounts, Custom Fields,
+Payment Terms, and Tax Codes resources, plus the agent-first affordances
 (`learn`, `explain`) and a real auth probe (`whoami`).
 
 The first resident user of this CLI is an LLM agent. Every verb supports
@@ -26,17 +27,32 @@ Commands
   tipalti learn              Print this self-teaching prompt. Supports --json.
   tipalti explain <path>...  Print markdown docs for any noun/verb path.
                              Supports --json.
-  tipalti whoami             Probe the active Tipalti principal. Supports --json.
-                             Reports `unauthenticated` and exits 0 when no
-                             credentials are configured (probe, not gate).
+  tipalti whoami             Probe auth reachability. Supports --json. Reports
+                             `unauthenticated` and exits 0 when no credentials
+                             are configured (probe, not gate). REST v2 has no
+                             identity endpoint, so no principal is returned.
 
   tipalti payee list         List payees. Flags: --limit, --cursor, --filter,
                              --json. One HTTP request per call.
   tipalti payee get <id>     Fetch a single payee. Supports --json.
   tipalti invoice list       List invoices. Same flag set as `payee list`.
   tipalti invoice get <id>   Fetch a single invoice. Supports --json.
-  tipalti bill list          List bills. Same flag set as `payee list`.
-  tipalti bill get <id>      Fetch a single bill. Supports --json.
+  tipalti payment list       List payments. Same flag set as `payee list`.
+  tipalti payment get <id>   Fetch a single payment. Supports --json.
+  tipalti payer-entity list  List payer entities. Same flag set as `payee list`.
+  tipalti payer-entity get <id>
+                             Fetch a single payer entity. Supports --json.
+  tipalti gl-account list    List GL accounts. Same flag set as `payee list`.
+  tipalti gl-account get <id>
+                             Fetch a single GL account. Supports --json.
+  tipalti custom-field list  List custom fields. Same flag set as `payee list`.
+  tipalti custom-field get <id>
+                             Fetch a single custom field. Supports --json.
+  tipalti payment-term list  List payment terms. Same flag set as `payee list`.
+  tipalti payment-term get <id>
+                             Fetch a single payment term. Supports --json.
+  tipalti tax-code list      List tax codes. Same flag set as `payee list`.
+  tipalti tax-code get <id>  Fetch a single tax code. Supports --json.
 
 Authentication (env vars)
 -------------------------
@@ -84,7 +100,10 @@ def _as_json_payload() -> dict[str, object]:
     return {
         "tool": "tipalti",
         "version": __version__,
-        "purpose": "Read-only CLI explorer for Tipalti REST v2 (Payees, Invoices, Bills).",
+        "purpose": (
+            "Read-only CLI explorer for Tipalti REST v2 "
+            "(payees, invoices, payments, and reference data)."
+        ),
         "primary_consumer": "LLM agent",
         "commands": [
             {"path": ["learn"], "summary": "Self-teaching prompt."},
@@ -94,8 +113,18 @@ def _as_json_payload() -> dict[str, object]:
             {"path": ["payee", "get"], "summary": "Get a single payee."},
             {"path": ["invoice", "list"], "summary": "List invoices."},
             {"path": ["invoice", "get"], "summary": "Get a single invoice."},
-            {"path": ["bill", "list"], "summary": "List bills."},
-            {"path": ["bill", "get"], "summary": "Get a single bill."},
+            {"path": ["payment", "list"], "summary": "List payments."},
+            {"path": ["payment", "get"], "summary": "Get a single payment."},
+            {"path": ["payer-entity", "list"], "summary": "List payer entities."},
+            {"path": ["payer-entity", "get"], "summary": "Get a single payer entity."},
+            {"path": ["gl-account", "list"], "summary": "List GL accounts."},
+            {"path": ["gl-account", "get"], "summary": "Get a single GL account."},
+            {"path": ["custom-field", "list"], "summary": "List custom fields."},
+            {"path": ["custom-field", "get"], "summary": "Get a single custom field."},
+            {"path": ["payment-term", "list"], "summary": "List payment terms."},
+            {"path": ["payment-term", "get"], "summary": "Get a single payment term."},
+            {"path": ["tax-code", "list"], "summary": "List tax codes."},
+            {"path": ["tax-code", "get"], "summary": "Get a single tax code."},
         ],
         "env_vars": {
             "TIPALTI_CLIENT_ID": "OAuth2 client ID (required)",

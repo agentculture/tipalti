@@ -4,7 +4,9 @@ This file provides guidance to [Claude Code](https://claude.com/claude-code) whe
 
 ## Status
 
-`v0.1.0` — first real release. Adds read-only verbs over Tipalti REST v2 (Payees, Invoices, Bills), OAuth2 client-credentials auth via env vars, and a real `whoami` probe. Mutations, iFrame URL generation, webhooks, SOAP, tax forms, and KYC are deferred to subsequent releases.
+`v0.2.0` — broadens read-only REST v2 coverage. Corrects the resource path prefix from `/v2/` to the documented `/api/v1/`, removes the `bill` noun (bills are unified under invoices upstream; `/v2/bills` never existed), and adds read-only `list`/`get` verbs for Payments, Payer Entities, GL Accounts, Custom Fields, Payment Terms, and Tax Codes. `whoami` now probes `/api/v1/payer-entities` (REST v2 has no identity endpoint) and reports reachability + auth only. Payment batches and OAuth scope handling are deferred; mutations, iFrame URL generation, webhooks, SOAP, tax forms, and KYC remain deferred to subsequent releases.
+
+`v0.1.0` — first real release. Added read-only verbs over Tipalti REST v2 (Payees, Invoices, Bills), OAuth2 client-credentials auth via env vars, and a real `whoami` probe.
 
 Scaffolded from the AgentCulture sibling pattern. Manual one-time setup (already completed for the v0.0.1 bootstrap PR):
 
@@ -14,7 +16,7 @@ Scaffolded from the AgentCulture sibling pattern. Manual one-time setup (already
 
 ## What this project is
 
-`tipalti` is the CLI for Tipalti Solutions, scaffolded from the AgentCulture sibling pattern (the same shape used by [`steward`](https://github.com/agentculture/steward) and the agent-first CLI tree from [`afi-cli`](https://github.com/agentculture/afi-cli)). v0.1.0 ships a read-only explorer over Tipalti REST v2 (Payees, Invoices, Bills) plus the agent-first affordances (`learn`, `explain`, `whoami`); mutations, iFrame URL generation, webhooks, SOAP, tax forms, and KYC land in subsequent releases.
+`tipalti` is the CLI for Tipalti Solutions, scaffolded from the AgentCulture sibling pattern (the same shape used by [`steward`](https://github.com/agentculture/steward) and the agent-first CLI tree from [`afi-cli`](https://github.com/agentculture/afi-cli)). v0.2.0 ships a read-only explorer over Tipalti REST v2 (Payees, Invoices, Payments, Payer Entities, GL Accounts, Custom Fields, Payment Terms, Tax Codes) plus the agent-first affordances (`learn`, `explain`, `whoami`); payment batches, OAuth scope handling, mutations, iFrame URL generation, webhooks, SOAP, tax forms, and KYC land in subsequent releases.
 
 The first resident user of this CLI is an LLM agent. Every verb supports `--json`, default human-mode output is markdown, errors carry machine-readable remediation hints, and one verb invocation = one upstream HTTP request (auth excluded). State lives in env vars; the only persistent file is the bearer-token cache.
 
@@ -58,7 +60,12 @@ tipalti/                    # Python package (pip install tipalti)
         ├── whoami.py       # `tipalti whoami` — real auth probe
         ├── payee.py        # `tipalti payee {list,get}`
         ├── invoice.py      # `tipalti invoice {list,get}`
-        └── bill.py         # `tipalti bill {list,get}`
+        ├── payment.py      # `tipalti payment {list,get}`
+        ├── payer_entity.py # `tipalti payer-entity {list,get}`
+        ├── gl_account.py   # `tipalti gl-account {list,get}`
+        ├── custom_field.py # `tipalti custom-field {list,get}`
+        ├── payment_term.py # `tipalti payment-term {list,get}`
+        └── tax_code.py     # `tipalti tax-code {list,get}`
 tipalti/explain/            # markdown catalog driving `explain`
 ├── __init__.py             # resolve() + known_paths()
 └── catalog.py              # ENTRIES dict (root, auth, per-noun, per-verb)
@@ -78,7 +85,7 @@ CHANGELOG.md                # Keep-a-Changelog
 - **Lint:** `uv run flake8 tipalti tests && uv run black --check . && uv run isort --check .`
 - **Markdown lint:** `markdownlint-cli2 "**/*.md"` (uses repo-local `.markdownlint-cli2.yaml`).
 - **Self-check:** `steward doctor . --scope self`.
-- **Smoke:** `uv run tipalti --version` (expects `0.1.0`) and `uv run python -m tipalti`.
+- **Smoke:** `uv run tipalti --version` (expects `0.2.0`) and `uv run python -m tipalti`.
 - **Build:** `uv build`.
 - **Version bump:** `python3 .claude/skills/version-bump/scripts/bump.py {patch|minor|major}` — updates `pyproject.toml` and prepends a CHANGELOG entry. **Required on every PR** (the `version-check` CI job comments on the PR and fails the run if the version matches main; AgentCulture rule, no exceptions for docs/config-only changes).
 - **Publish:** push to `main` triggers `.github/workflows/publish.yml` → builds with `uv build` → publishes `tipalti` to PyPI via Trusted Publishing (no API tokens). PRs publish a `.dev<run_number>` to TestPyPI for smoke-testing. Fork PRs are skipped (no OIDC context).
