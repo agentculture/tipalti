@@ -8,7 +8,7 @@ description: >
   status ping for a Culture channel, or pulling an issue body + comments
   into context). Issue posts auto-sign with `- tipalti (Claude)`; mesh
   messages are unsigned (the IRC nick is the speaker). Not for in-tipalti
-  issues — use `gh issue create` or the `pr-review` skill for those. Renamed
+  issues — use `gh issue create` or the `cicd` skill for those. Renamed
   from `coordinate` in steward 0.8.0; absorbed `gh-issues` in 0.9.1.
   Issue I/O is backed by `agtag` (>=0.1) starting in 0.11.0.
 ---
@@ -105,8 +105,8 @@ agtag mesh transport is slated for v0.2.
 ## When NOT to Use
 
 - **In-tipalti issues** — open them with `gh issue create` directly, or
-  work them through the `pr-review` skill.
-- **PR review comments** — that's the `pr-review` skill (which already
+  work them through the `cicd` skill.
+- **PR review comments** — that's the `cicd` skill (which already
   auto-signs replies).
 - **Routine commits** — those don't get cross-repo signatures.
 - **Long-form asks on the mesh** — anything that needs acceptance
@@ -311,7 +311,7 @@ hypotheticals.
 - Sign mesh messages with `- <nick> (Claude)`. The nick already says
   who you are.
 - Use this skill for in-tipalti issues — use `gh issue create` or the
-  `pr-review` skill instead.
+  `cicd` skill instead.
 - Manually type `- <nick> (Claude)` at the end of an issue or comment
   body — agtag appends it. Manual typing creates double-signatures.
 - Post the same ask twice across channels (issue + mesh). Pick one.

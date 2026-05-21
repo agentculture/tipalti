@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/). This project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-05-21
+
+### Added
+
+- `docs/skill-sources.md` — provenance ledger mapping each vendored
+  skill (`cicd`, `communicate`, `notebooklm`, `pypi-maintainer`,
+  `run-tests`, `sonarclaude`, `version-bump`) to its upstream and any
+  tipalti-local divergence, modeled on steward's supplier-side ledger
+  but written from tipalti's downstream-consumer angle.
+- `.claude/skills/cicd/scripts/_resolve-nick.sh` — nick resolver
+  (first agent `suffix` in `culture.yaml`, else repo basename) so
+  `pr-reply.sh` signs `- <nick> (Claude)`.
+
+### Changed
+
+- Resynced the vendored PR-workflow skill from steward, resolving the
+  auto-broadcast issues #6/#10. The standalone `pr-review` skill is
+  **renamed to `cicd`** and rebased onto `agex pr` (steward 0.12.0's
+  shape): `workflow.sh` now delegates `lint` / `open` / `read` /
+  `reply` / `delta` to `agex pr`, keeping the steward-origin `status`
+  (SonarCloud quality gate + hotspots + unresolved-thread tally) and
+  `await` (`read --wait` + `status`, non-zero exit on Sonar ERROR or
+  unresolved threads) extensions. **Requires `agex`
+  (`agentculture/agex-cli`) on PATH.** `STEWARD_*` env knobs are
+  renamed to `TIPALTI_*` (`TIPALTI_AGEX_AGENT`, `TIPALTI_PR_AWAIT_WAIT`,
+  `TIPALTI_PR_AWAIT_SECONDS`).
+- `pr-reply.sh` now signs `- tipalti (Claude)` (via `_resolve-nick.sh`
+  basename fallback) instead of the previous generic `- Claude`,
+  matching how the `communicate` skill signs issue posts.
+- `pr-status.sh` honors `SONAR_PROJECT_KEY` and points the
+  full-comment-bodies footer at `agex pr read`.
+- Cross-references updated `pr-review` → `cicd` in
+  `communicate/SKILL.md` and `.claude/skills.local.yaml.example`.
+
+### Removed
+
+- `.claude/skills/cicd/scripts/pr-batch.sh` and `pr-comments.sh` —
+  superseded by `agex pr reply` / `agex pr read`, mirroring steward's
+  0.12.0 removal.
+
 ## [0.3.0] - 2026-05-21
 
 ### Added
