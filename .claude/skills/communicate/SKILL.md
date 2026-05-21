@@ -206,9 +206,9 @@ template can't anticipate (e.g. "this skill's `post-issue.sh`
 hard-codes a signature literal — your vendor must change it"). The
 brief is rendered once and reused across consumers; per-consumer
 failures stream to stderr and the verb exits 1 if any failed. The
-template lives at
-`scripts/templates/skill-update-brief.md` so future supplier-role
-repos can render their own briefs from the same shape.
+brief template lives in steward's copy of this skill
+(`scripts/templates/skill-update-brief.md`); tipalti vendors only the
+primitives, so it is not shipped here.
 
 #### Fast recipe — "brief sibling-repo Z on skill X"
 
@@ -293,7 +293,6 @@ behavior — fix the registration, don't paper over it.
 | `scripts/post-comment.sh` | Comment on an existing issue. Wraps `agtag issue reply`; auto-signs from `culture.yaml`. |
 | `scripts/fetch-issues.sh` | Fetch one or more issues (single / range / list) with body + comments. Wraps `agtag issue fetch`. |
 | `scripts/mesh-message.sh` | Send a message to a Culture mesh channel. Unsigned (IRC nick is the speaker). |
-| `scripts/templates/skill-update-brief.md` | The Markdown template consumed by `steward announce-skill-update` (the broadcast verb lives in steward-cli, not in this skill). Six fixed sections; placeholder syntax `{{NAME}}`. |
 
 More scripts can land here as the communication footprint grows —
 `mesh-ask.sh` for question-shaped pings via `culture channel ask`,

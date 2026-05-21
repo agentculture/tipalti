@@ -21,7 +21,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   references `steward` → `tipalti`, `cicd` → `pr-review`); upstream and
   historical attributions are left intact, and the supplier-role
   broadcast section (`steward announce-skill-update`) is preserved
-  verbatim since downstream vendors don't broadcast.
+  verbatim since downstream vendors don't broadcast. The supplier-only
+  `scripts/templates/skill-update-brief.md` is intentionally **not**
+  vendored — it is consumed by steward-cli's broadcast verb (absent
+  here) and documents a `../steward` sibling-checkout recipe that
+  conflicts with tipalti's no-sibling-dependency rule; tipalti vendors
+  only the four primitive scripts.
 
 ### Removed
 
