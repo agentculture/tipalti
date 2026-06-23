@@ -1,6 +1,6 @@
 [project]
 name = "tipalti"
-version = "0.4.1"
+version = "0.5.0"
 description = "Unofficial CLI for the Tipalti REST API — independent project, not affiliated with Tipalti Solutions Ltd."
 readme = "README.md"
 license = "MIT"
